@@ -1,0 +1,257 @@
+"use client";
+
+import { ChevronLeft, ChevronRight, ListFilter, Cog } from "lucide-react";
+import { SmallButton } from "@/components/ui/button";
+import { useState } from "react";
+import { AnimatedBackground } from "../../components/motion-primitives/animated-background";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface ReviewTableToolbarProps {
+  chatOpen: boolean;
+  onToggleChat: () => void;
+  onCloseArtifact?: () => void;
+}
+
+export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArtifact }: ReviewTableToolbarProps) {
+  // State for alignment options
+  const [alignment, setAlignment] = useState<'top' | 'center' | 'bottom'>('top');
+  
+  // State for text overflow/wrapping
+  const [textDisplay, setTextDisplay] = useState<'overflow' | 'wrapping'>('overflow');
+  
+  // State for concise/extend
+  const [textLength, setTextLength] = useState<'concise' | 'extend'>('concise');
+
+  return (
+    <TooltipProvider>
+      <div className="px-3 py-3 border-b border-neutral-200 bg-white flex items-center justify-between" style={{ height: '52px' }}>
+        <div className="flex items-center gap-2">
+          {/* Toggle Chat Button */}
+          <SmallButton
+            onClick={onToggleChat}
+            variant="secondary"
+            className={chatOpen ? "bg-neutral-100" : ""}
+            icon={
+              <img 
+                src={chatOpen ? "/square-asterisk-filled.svg" : "/square-asterisk-outline.svg"}
+                alt="Harvey" 
+                width={14} 
+                height={14} 
+                className="text-neutral-700"
+                style={{ filter: chatOpen ? 'none' : 'brightness(0) saturate(100%) invert(38%) sepia(8%) saturate(664%) hue-rotate(314deg) brightness(96%) contrast(92%)' }}
+              />
+            }
+          >
+            Ask Harvey
+          </SmallButton>
+          
+          {/* Separator */}
+          <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
+          
+          {/* Filter Button */}
+          <SmallButton
+            icon={<ListFilter size={14} />}
+          >
+            Filter
+          </SmallButton>
+          
+          {/* Manage Columns Button */}
+          <SmallButton
+            icon={<Cog size={14} />}
+          >
+            Manage columns
+          </SmallButton>
+          
+          {/* Separator */}
+          <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
+          
+          {/* Alignment Options */}
+          <AnimatedBackground
+            defaultValue="top"
+            onValueChange={(value: string | null) => setAlignment(value as 'top' | 'center' | 'bottom')}
+            className="bg-neutral-100 rounded-md"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+          >
+            <div data-id="top" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src={alignment === 'top' ? '/top-align-filled.svg' : '/top-align-outline.svg'} 
+                      alt="Top align" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Top align</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            
+            <div data-id="center" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src={alignment === 'center' ? '/center-align-filled.svg' : '/center-align-outline.svg'} 
+                      alt="Center align" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Center align</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            
+            <div data-id="bottom" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src={alignment === 'bottom' ? '/bottom-align-filled.svg' : '/bottom-align-outline.svg'} 
+                      alt="Bottom align" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Bottom align</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </AnimatedBackground>
+          
+          {/* Separator */}
+          <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
+          
+          {/* Text Display Options */}
+          <AnimatedBackground
+            defaultValue="overflow"
+            onValueChange={(value: string | null) => setTextDisplay(value as 'overflow' | 'wrapping')}
+            className="bg-neutral-100 rounded-md"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+          >
+            <div data-id="overflow" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src="/overflow.svg" 
+                      alt="Text overflow" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Text overflow</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            
+            <div data-id="wrapping" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src="/wrapping.svg" 
+                      alt="Text wrapping" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Text wrapping</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </AnimatedBackground>
+          
+          {/* Separator */}
+          <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
+          
+          {/* Text Length Options */}
+          <AnimatedBackground
+            defaultValue="concise"
+            onValueChange={(value: string | null) => setTextLength(value as 'concise' | 'extend')}
+            className="bg-neutral-100 rounded-md"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+          >
+            <div data-id="concise" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src="/concise.svg" 
+                      alt="Concise" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Concise</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            
+            <div data-id="extend" className="relative inline-flex">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 rounded-md text-neutral-600">
+                    <img 
+                      src="/extend.svg" 
+                      alt="Extend" 
+                      width={16} 
+                      height={16} 
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Extend</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </AnimatedBackground>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Close button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                onClick={chatOpen ? onCloseArtifact : undefined}
+                disabled={!chatOpen}
+                className={`p-2 rounded-md transition-colors ${
+                  chatOpen 
+                    ? 'hover:bg-neutral-100 text-neutral-600' 
+                    : 'text-neutral-300 cursor-not-allowed'
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6L6 18"/>
+                  <path d="M6 6l12 12"/>
+                </svg>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{chatOpen ? "Close" : "Open assistant to close artifact"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+} 
