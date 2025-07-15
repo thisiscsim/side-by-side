@@ -46,8 +46,9 @@ export function AnimatedBackground({
     }
   }, [defaultValue]);
 
-  return Children.map(children, (child: any, index) => {
-    const id = child.props['data-id'];
+  return Children.map(children, (child: ReactElement, index) => {
+    const childProps = child.props as { 'data-id': string; className?: string; children?: React.ReactNode };
+    const id = childProps['data-id'];
 
     const interactionProps = enableHover
       ? {
@@ -62,10 +63,10 @@ export function AnimatedBackground({
       child,
       {
         key: index,
-        className: cn('relative inline-flex', child.props.className),
+        className: cn('relative inline-flex', childProps.className),
         'data-checked': activeId === id ? 'true' : 'false',
         ...interactionProps,
-      },
+      } as Record<string, unknown>,
       <>
         <AnimatePresence initial={false}>
           {activeId === id && (
@@ -83,7 +84,7 @@ export function AnimatedBackground({
             />
           )}
         </AnimatePresence>
-        <div className='z-10'>{child.props.children}</div>
+        <div className='z-10'>{childProps.children}</div>
       </>
     );
   });
