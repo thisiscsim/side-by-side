@@ -2,14 +2,26 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface SourcesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   showOverlay?: boolean;
+  variant?: "embedded" | "sheet" | "panel";
 }
 
-export default function SourcesDrawer({ isOpen, onClose, showOverlay = false }: SourcesDrawerProps) {
+export default function SourcesDrawer({ 
+  isOpen, 
+  onClose, 
+  showOverlay = false,
+  variant = "embedded" 
+}: SourcesDrawerProps) {
   const sources = [
     {
       title: "Investopedia",
@@ -55,6 +67,122 @@ export default function SourcesDrawer({ isOpen, onClose, showOverlay = false }: 
     }
   ];
 
+  const sourcesContent = (
+    <>
+      <style jsx>{`
+        .scrollbar-thin {
+          scrollbar-width: thin;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: transparent;
+          border-radius: 4px;
+          transition: background 0.2s ease;
+        }
+        .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+          background: rgba(163, 163, 163, 0.5);
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: rgba(163, 163, 163, 0.7);
+        }
+      `}</style>
+      
+      {/* Sources List */}
+      <div className="space-y-3 px-2">
+        {sources.map((source, index) => (
+          <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
+            <div className="flex items-start space-x-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-4 h-4 text-sm flex items-center justify-center" role="img" aria-label="Source icon">
+                    {source.favicon}
+                  </div>
+                  <h4 className="font-medium text-neutral-900" style={{ fontSize: '12px' }}>
+                    {source.title}
+                  </h4>
+                  {source.url && (
+                    <>
+                      <span className="text-neutral-400" style={{ fontSize: '12px' }}>•</span>
+                      <span className="text-neutral-600" style={{ fontSize: '12px' }}>
+                        {source.url}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <p className="text-neutral-700 leading-relaxed mb-3" style={{ fontSize: '12px' }}>
+                  {source.description}
+                </p>
+                <div className="flex items-center gap-2">
+                  {source.references.map((ref, refIndex) => (
+                    <button
+                      key={refIndex}
+                      className="inline-flex items-center justify-center border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium transition-colors"
+                      style={{ 
+                        width: '14px', 
+                        height: '14px',
+                        fontSize: '10px',
+                        lineHeight: '1',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      {ref}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* See all link */}
+      <div className="mt-6 pt-4 border-t border-neutral-100 px-2">
+        <button className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-1">
+          See all
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </>
+  );
+
+  // Panel variant - just returns the content without wrapper
+  if (variant === "panel") {
+    return (
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent" style={{ width: '400px' }}>
+          {sourcesContent}
+        </div>
+      </div>
+    );
+  }
+
+  // Sheet variant - opens as a separate panel
+  if (variant === "sheet") {
+    return (
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent side="right" className="w-[400px] sm:w-[400px] p-0 flex flex-col">
+          <SheetHeader className="px-3 py-4 border-b border-neutral-200" style={{ height: '52px' }}>
+            <SheetTitle className="text-neutral-900 font-medium">Sources</SheetTitle>
+          </SheetHeader>
+          
+          {/* Content with custom scrollbar */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent">
+            {sourcesContent}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Embedded variant - current behavior
   return (
     <AnimatePresence>
       {isOpen && (
@@ -98,87 +226,7 @@ export default function SourcesDrawer({ isOpen, onClose, showOverlay = false }: 
             
             {/* Content with custom scrollbar */}
             <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent">
-              <style jsx>{`
-                .scrollbar-thin {
-                  scrollbar-width: thin;
-                }
-                .scrollbar-thin::-webkit-scrollbar {
-                  width: 8px;
-                  height: 8px;
-                }
-                .scrollbar-thin::-webkit-scrollbar-track {
-                  background: transparent;
-                }
-                .scrollbar-thin::-webkit-scrollbar-thumb {
-                  background: transparent;
-                  border-radius: 4px;
-                  transition: background 0.2s ease;
-                }
-                .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-                  background: rgba(163, 163, 163, 0.5);
-                }
-                .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-                  background: rgba(163, 163, 163, 0.7);
-                }
-              `}</style>
-              
-              {/* Sources List */}
-              <div className="space-y-3 px-2">
-                {sources.map((source, index) => (
-                  <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-4 h-4 text-sm flex items-center justify-center" role="img" aria-label="Source icon">
-                            {source.favicon}
-                          </div>
-                          <h4 className="font-medium text-neutral-900" style={{ fontSize: '12px' }}>
-                            {source.title}
-                          </h4>
-                          {source.url && (
-                            <>
-                              <span className="text-neutral-400" style={{ fontSize: '12px' }}>•</span>
-                              <span className="text-neutral-600" style={{ fontSize: '12px' }}>
-                                {source.url}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <p className="text-neutral-700 leading-relaxed mb-3" style={{ fontSize: '12px' }}>
-                          {source.description}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {source.references.map((ref, refIndex) => (
-                            <button
-                              key={refIndex}
-                              className="inline-flex items-center justify-center border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium transition-colors"
-                              style={{ 
-                                width: '14px', 
-                                height: '14px',
-                                fontSize: '10px',
-                                lineHeight: '1',
-                                borderRadius: '4px'
-                              }}
-                            >
-                              {ref}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* See all link */}
-              <div className="mt-6 pt-4 border-t border-neutral-100 px-2">
-                <button className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-1">
-                  See all
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                </button>
-              </div>
+              {sourcesContent}
             </div>
           </motion.div>
         </>

@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { UserPlus, Download, ChevronLeft, ChevronRight, X } from "lucide-react";
 import SourcesDrawer from "@/components/sources-drawer";
 import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
@@ -139,7 +139,7 @@ export default function Home() {
               <motion.div 
                 initial={false}
                 animate={{ 
-                  width: artifactPanelOpen ? chatWidth : '100%',
+                  width: artifactPanelOpen ? chatWidth : (sourcesDrawerOpen && !artifactPanelOpen ? 'calc(100% - 400px)' : '100%'),
                   opacity: 1
                 }}
                 exit={{ width: 0, opacity: 0 }}
@@ -153,13 +153,17 @@ export default function Home() {
                 }}
               >
         <div className="flex flex-col bg-white relative" style={{ 
-          width: artifactPanelOpen ? chatWidth - 1 : '100%'
+          width: artifactPanelOpen ? chatWidth - 1 : '100%',
+          minWidth: 0
         }}>
-          {/* Sources Drawer */}
-          <SourcesDrawer 
-            isOpen={sourcesDrawerOpen} 
-            onClose={() => setSourcesDrawerOpen(false)} 
-          />
+          {/* Sources Drawer - Embedded variant when artifact panel is open */}
+          {artifactPanelOpen && (
+            <SourcesDrawer 
+              isOpen={sourcesDrawerOpen} 
+              onClose={() => setSourcesDrawerOpen(false)}
+              variant="embedded"
+            />
+          )}
           {/* Header */}
           <div className="px-3 py-4 border-b border-neutral-200 flex items-center justify-between" style={{ height: '52px' }}>
             <p className="text-neutral-900 font-medium truncate mr-4">Key terms, provisions and clauses to sell property in the U.S.</p>
@@ -232,7 +236,7 @@ export default function Home() {
           </div>
           
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
             <div className="space-y-6 mx-auto" style={{ maxWidth: '740px' }}>
             {messages.length === 0 ? (
               <div className="text-center text-neutral-500 mt-8">
@@ -292,7 +296,7 @@ export default function Home() {
           </div>
           
           {/* Input Area */}
-          <div className="p-6">
+          <div className="p-6 overflow-x-hidden">
             <div className="mx-auto" style={{ maxWidth: '832px' }}>
               <div className="p-4 transition-all duration-200 border border-transparent focus-within:border-neutral-300 bg-neutral-100" style={{ borderRadius: '12px' }}>
               {/* Textarea */}
@@ -403,6 +407,43 @@ export default function Home() {
         )}
       </motion.div>
       )}
+      </AnimatePresence>
+      
+      {/* Sources Panel - Shows when artifact panel is closed */}
+      <AnimatePresence>
+        {!artifactPanelOpen && sourcesDrawerOpen && (
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 400, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{
+              width: PANEL_ANIMATION,
+              opacity: { duration: 0.15, ease: "easeOut" }
+            }}
+            className="h-full bg-white border-l border-neutral-200 flex flex-col overflow-hidden"
+            style={{ 
+              flexShrink: 0
+            }}
+          >
+            {/* Header */}
+            <div className="px-3 py-4 border-b border-neutral-200 flex items-center justify-between" style={{ height: '52px' }}>
+              <p className="text-neutral-900 font-medium truncate mr-4">Sources</p>
+              <button
+                onClick={() => setSourcesDrawerOpen(false)}
+                className="p-2 hover:bg-neutral-100 rounded-md transition-colors"
+              >
+                <X size={16} className="text-neutral-600" />
+              </button>
+            </div>
+            
+            {/* Sources Content */}
+            <SourcesDrawer 
+              isOpen={true} 
+              onClose={() => setSourcesDrawerOpen(false)}
+              variant="panel"
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
       
       {/* Artifact Panel - Right Panel */}
