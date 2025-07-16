@@ -3,8 +3,8 @@ import "./globals.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 export const metadata: Metadata = {
-  title: "Harvey - Side by Side Experience",
-  description: "AI chat interface with artifact generation",
+  title: "Harvey Demo",
+  description: "Professional Class AI for Legal Professionals",
 };
 
 export default function RootLayout({
