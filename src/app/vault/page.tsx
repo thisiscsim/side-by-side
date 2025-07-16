@@ -10,6 +10,7 @@ import { AnimatedBackground } from "../../../components/motion-primitives/animat
 
 export default function VaultPage() {
   const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const projects = [
     {
@@ -17,58 +18,77 @@ export default function VaultPage() {
       name: "Nikhil's Project",
       fileCount: "2,593 files",
       type: "project",
-      status: "",
-      icon: "lock"
+      status: ""
     },
     {
       id: 2,
       name: "M&A (US)",
       fileCount: "2,593 files",
       type: "knowledge",
-      status: "Knowledge base",
-      icon: "stack"
+      status: "Knowledge base"
     },
     {
       id: 3,
       name: "Cross-Border Tax Strategies",
       fileCount: "2,593 files",
       type: "knowledge",
-      status: "Knowledge base",
-      icon: "stack"
+      status: "Knowledge base"
     },
     {
       id: 4,
       name: "Reevo AI - Series B Financing",
       fileCount: "2,593 files",
       type: "shared",
-      status: "Shared",
-      icon: "users"
+      status: "Shared"
     },
     {
       id: 5,
       name: "Regulatory Compliance Audit",
       fileCount: "2,593 files",
       type: "project",
-      status: "",
-      icon: "folder"
+      status: ""
     },
     {
       id: 6,
       name: "Amend v Delta IP Litigation",
       fileCount: "2,593 files",
       type: "shared",
-      status: "Shared",
-      icon: "users"
+      status: "Shared"
     },
     {
       id: 7,
       name: "Open Ledger Merger Integration (2024)",
       fileCount: "2,593 files",
       type: "project",
-      status: "",
-      icon: "folder"
+      status: ""
     },
   ];
+
+  // Filter projects based on active tab and search query
+  const filteredProjects = projects.filter(project => {
+    // First filter by tab
+    let tabMatch = true;
+    if (activeTab === "shared") {
+      tabMatch = project.type === "shared";
+    } else if (activeTab === "your") {
+      tabMatch = project.type !== "shared"; // Show project and knowledge types
+    }
+    // "all" tab shows everything, so tabMatch stays true
+    
+    // Then filter by search query
+    let searchMatch = true;
+    if (searchQuery.trim()) {
+      try {
+        const regex = new RegExp(searchQuery, 'i'); // Case-insensitive regex
+        searchMatch = regex.test(project.name);
+      } catch (error) {
+        // If regex is invalid, fall back to simple string matching
+        searchMatch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+    }
+    
+    return tabMatch && searchMatch;
+  });
 
   return (
     <div className="flex h-screen w-full">
@@ -126,12 +146,12 @@ export default function VaultPage() {
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  <AnimatedBackground 
-                    defaultValue={activeTab}
-                    onValueChange={(value) => value && setActiveTab(value)}
-                    className="bg-neutral-100 rounded-md"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  >
+                                  <AnimatedBackground 
+                  defaultValue={activeTab}
+                  onValueChange={(value) => value && setActiveTab(value)}
+                  className="bg-neutral-100 rounded-md"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
                     <button
                       data-id="all"
                       className="relative px-2 py-1.5 font-medium transition-colors text-neutral-600 hover:text-neutral-900 data-[checked=true]:text-neutral-900"
@@ -162,8 +182,10 @@ export default function VaultPage() {
                     <Input
                       type="text"
                       placeholder="Search"
-                      className="pl-9 pr-3 border-neutral-200 focus:ring-1 focus:ring-neutral-300 font-normal"
-                      style={{ height: '32px', fontSize: '14px', lineHeight: '20px' }}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 pr-3 border-neutral-200 focus:ring-1 focus:ring-neutral-300 font-normal text-neutral-900 placeholder:text-neutral-500"
+                      style={{ height: '32px', fontSize: '14px', lineHeight: '20px', color: '#171717' }}
                     />
                   </div>
               </div>
@@ -172,40 +194,30 @@ export default function VaultPage() {
             {/* Projects Grid */}
             <div className="flex-1 pt-4 pb-6 overflow-y-auto">
               <div className="grid grid-cols-4 gap-4">
-                {projects.map((project) => (
+                {filteredProjects.map((project) => (
                                   <div
                   key={project.id}
                   className="cursor-pointer"
                 >
                   {/* Icon container */}
                   <div className="w-full bg-neutral-100 rounded-lg flex items-center justify-center mb-2.5" style={{ height: '162px' }}>
-                    {project.icon === "lock" && (
-                      <svg className="w-8 h-8 text-neutral-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {project.icon === "stack" && (
-                      <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    )}
-                    {project.icon === "users" && (
-                      <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    )}
-                    {project.icon === "folder" && (
-                      <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                    )}
+                    <img 
+                      src={
+                        project.name === "Nikhil's Project" ? "/privateFolderIcon.svg" :
+                        project.type === "shared" ? "/sharedFolderIcon.svg" :
+                        project.type === "knowledge" ? "/knowledgeBaseIcon.svg" :
+                        "/folderIcon.svg"
+                      }
+                      alt={`${project.name} icon`}
+                      className="w-[72px] h-[72px]"
+                    />
                   </div>
                   
                   {/* Title and menu */}
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-neutral-900 leading-tight m-0">{project.name}</p>
-                      <div className="flex items-center gap-2 leading-tight">
+                      <div className="flex items-center gap-1 leading-tight">
                         <p className="text-xs text-neutral-500 m-0">{project.fileCount}</p>
                         {project.status && (
                           <>

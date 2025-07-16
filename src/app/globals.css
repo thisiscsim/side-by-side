@@ -10,6 +10,12 @@
   font-display: swap;
 }
 
+/* Text selection highlight color */
+::selection {
+  background-color: rgb(212 212 212); /* neutral-300 - matches input field styling */
+  color: rgb(23 23 23); /* neutral-900 for good contrast */
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
