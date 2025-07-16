@@ -15,7 +15,7 @@ import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
 import ReviewTableToolbar from "@/components/review-table-toolbar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset } from "@/components/ui/sidebar";
+import { SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import ReviewTableArtifactCard from "@/components/review-table-artifact-card";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
@@ -56,6 +56,9 @@ export default function AssistantChatPage({
   const searchParams = useSearchParams();
   const initialMessage = searchParams.get('initialMessage');
   
+  // Sidebar control hook
+  const { setOpen: setSidebarOpen } = useSidebar();
+  
   // Use the initial message as the title if it's a new chat
   const chatTitle = getChatTitle(chatId) === 'Chat' && initialMessage ? initialMessage : getChatTitle(chatId);
   
@@ -72,6 +75,12 @@ export default function AssistantChatPage({
   const [selectedArtifact, setSelectedArtifact] = useState<{ title: string; subtitle: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasProcessedInitialMessageRef = useRef(false);
+  
+  // Track if chat panel is being toggled interactively (not on mount)
+  const [isChatToggling, setIsChatToggling] = useState(false);
+  
+  // Track if we've already auto-collapsed the sidebar for this artifact session
+  const hasAutoCollapsedSidebarRef = useRef(false);
   
   // Check if we're coming from the assistant homepage
   const [isFromHomepage] = useState(() => {
@@ -109,14 +118,41 @@ export default function AssistantChatPage({
             subtitle: '24 columns · 104 rows'
           }
         }]);
+        
+        // Auto-expand sources drawer for first-time users from homepage
+        if (isFromHomepage) {
+          setTimeout(() => {
+            setSourcesDrawerOpen(true);
+          }, 500); // Small delay after the AI response is rendered
+        }
       }, 1000);
     }
-  }, [initialMessage]);
+  }, [initialMessage, isFromHomepage]);
 
+  // Auto-collapse sidebar when artifact panel opens
+  // Note: This is a one-time auto-collapse for space optimization.
+  // Users can still manually expand the sidebar afterward using the avatar button,
+  // sidebar rail, or keyboard shortcut (Cmd/Ctrl + B).
+  useEffect(() => {
+    if (artifactPanelOpen && !hasAutoCollapsedSidebarRef.current) {
+      setSidebarOpen(false);
+      hasAutoCollapsedSidebarRef.current = true;
+    } else if (!artifactPanelOpen) {
+      // Reset the flag when artifact panel closes
+      hasAutoCollapsedSidebarRef.current = false;
+    }
+  }, [artifactPanelOpen, setSidebarOpen]);
 
+  // Reset chat toggling flag when chat closes
+  useEffect(() => {
+    if (!chatOpen && isChatToggling) {
+      setIsChatToggling(false);
+    }
+  }, [chatOpen, isChatToggling]);
 
   const toggleChat = (open: boolean) => {
     console.log('Toggling chat to:', open);
+    setIsChatToggling(true);
     setChatOpen(open);
   };
 
@@ -201,7 +237,7 @@ export default function AssistantChatPage({
           <AnimatePresence>
             {chatOpen && (
               <motion.div 
-                initial={false}
+                initial={isChatToggling ? { width: 0, opacity: 0 } : false}
                 animate={{ 
                   width: artifactPanelOpen ? chatWidth : (sourcesDrawerOpen && !artifactPanelOpen ? 'calc(100% - 400px)' : '100%'),
                   opacity: 1
@@ -211,6 +247,11 @@ export default function AssistantChatPage({
                   width: PANEL_ANIMATION,
                   opacity: { duration: 0.15, ease: "easeOut" }
                 } : { duration: 0 }}
+                onAnimationComplete={() => {
+                  if (isChatToggling) {
+                    setIsChatToggling(false);
+                  }
+                }}
                 className="flex relative overflow-hidden bg-white"
                 style={{ 
                   flexShrink: 0
