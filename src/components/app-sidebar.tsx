@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 import {
   Sidebar,
@@ -23,27 +24,40 @@ import { cn } from "@/lib/utils"
 const menuItems = [
   {
     title: "Assistant",
+    href: "/assistant",
     iconOutline: "/square-asterisk-outline.svg",
     iconFilled: "/square-asterisk-filled.svg",
   },
   {
     title: "Vault",
+    href: "/vault",
     iconOutline: "/folder-vault-outline.svg",
     iconFilled: "/folder-vault-filled.svg",
   },
 ]
 
-
-
 export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar()
-  const [selectedItem, setSelectedItem] = useState("Assistant")
+  const router = useRouter()
+  const pathname = usePathname()
   const [isAvatarHovered, setIsAvatarHovered] = useState(false)
+  
+  // Determine the selected item based on current path
+  const getSelectedItem = () => {
+    const currentItem = menuItems.find(item => item.href === pathname)
+    return currentItem?.title || "Assistant"
+  }
+  
+  const selectedItem = getSelectedItem()
   
   // Reset hover state when sidebar state changes
   useEffect(() => {
     setIsAvatarHovered(false)
   }, [state])
+
+  const handleNavigation = (href: string) => {
+    router.push(href)
+  }
   
   return (
     <Sidebar collapsible="icon" className="relative border-r border-neutral-200" style={{ backgroundColor: 'white' }}>
@@ -113,24 +127,24 @@ export function AppSidebar() {
                 <SidebarMenuItem key={index}>
                   <SidebarMenuButton
                     tooltip={state === "collapsed" ? item.title : undefined}
-                    onClick={() => setSelectedItem(item.title)}
+                    onClick={() => handleNavigation(item.href)}
                     className={cn(
                       "w-full justify-start gap-[6px] text-sm rounded-md transition-colors",
                       state === "expanded" ? "px-3 h-[36px]" : "p-0 w-[36px] h-[36px] min-w-[36px] min-h-[36px] flex items-center justify-center",
                       selectedItem === item.title ? "bg-neutral-200 hover:bg-neutral-200" : "hover:bg-neutral-100"
                     )}
-                                      >
-                      <Image
-                        src={selectedItem === item.title ? item.iconFilled : item.iconOutline}
-                        alt={item.title}
-                        width={16}
-                        height={16}
-                        className="flex-shrink-0"
-                      />
-                      {state === "expanded" && (
-                        <span className="text-neutral-700">{item.title}</span>
-                      )}
-                    </SidebarMenuButton>
+                  >
+                    <Image
+                      src={selectedItem === item.title ? item.iconFilled : item.iconOutline}
+                      alt={item.title}
+                      width={16}
+                      height={16}
+                      className="flex-shrink-0"
+                    />
+                    {state === "expanded" && (
+                      <span className="text-neutral-700">{item.title}</span>
+                    )}
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
