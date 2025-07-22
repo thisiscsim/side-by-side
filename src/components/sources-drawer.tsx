@@ -1,7 +1,15 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Search, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -22,6 +30,9 @@ export default function SourcesDrawer({
   showOverlay = false,
   variant = "embedded" 
 }: SourcesDrawerProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("All");
+  
   const sources = [
     {
       title: "Investopedia",
@@ -93,8 +104,49 @@ export default function SourcesDrawer({
         }
       `}</style>
       
+      {/* Search and Filter Section */}
+      <div className="px-2 pb-2">
+        <div className="flex gap-2">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Input
+              type="text"
+              placeholder="Search sources"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm text-neutral-900 h-8 shadow-none"
+            />
+          </div>
+          
+          {/* Filter Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1 px-3 h-8 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors">
+                <span className="text-sm text-neutral-900">{filterType}</span>
+                <ChevronDown className="h-4 w-4 text-neutral-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem onClick={() => setFilterType("All")}>
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType("Legal")}>
+                Legal
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType("Business")}>
+                Business
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType("Cases")}>
+                Cases
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      
       {/* Sources List */}
-      <div className="space-y-3 px-2">
+      <div className="space-y-3 px-2 mt-2">
         {sources.map((source, index) => (
           <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
             <div className="flex items-start space-x-3">
@@ -118,7 +170,7 @@ export default function SourcesDrawer({
                 <p className="text-neutral-700 leading-relaxed mb-3" style={{ fontSize: '12px' }}>
                   {source.description}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {source.references.map((ref, refIndex) => (
                     <button
                       key={refIndex}

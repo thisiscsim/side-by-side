@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Harvey Demo",
@@ -18,6 +19,17 @@ export default function RootLayout({
         <SidebarProvider defaultOpen={true}>
           {children}
         </SidebarProvider>
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            style: {
+              borderRadius: '10px',
+              padding: '12px 16px',
+              fontSize: '14px',
+              lineHeight: '20px',
+            },
+          }}
+        />
       </body>
     </html>
   );

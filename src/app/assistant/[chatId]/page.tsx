@@ -13,12 +13,16 @@ import { UserPlus, Download, ChevronLeft, ChevronRight, X } from "lucide-react";
 import SourcesDrawer from "@/components/sources-drawer";
 import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
+import ExportThreadDialog from "@/components/export-thread-dialog";
+import ExportReviewDialog from "@/components/export-review-dialog";
 import ReviewTableToolbar from "@/components/review-table-toolbar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import ReviewTableArtifactCard from "@/components/review-table-artifact-card";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -71,6 +75,8 @@ export default function AssistantChatPage({
   const [sourcesDrawerOpen, setSourcesDrawerOpen] = useState(false);
   const [shareThreadDialogOpen, setShareThreadDialogOpen] = useState(false);
   const [shareArtifactDialogOpen, setShareArtifactDialogOpen] = useState(false);
+  const [exportThreadDialogOpen, setExportThreadDialogOpen] = useState(false);
+  const [exportReviewDialogOpen, setExportReviewDialogOpen] = useState(false);
   const [artifactPanelOpen, setArtifactPanelOpen] = useState(false);
   const [selectedArtifact, setSelectedArtifact] = useState<{ title: string; subtitle: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +102,15 @@ export default function AssistantChatPage({
 
   // Track if animations have already been played to prevent replaying on chat panel toggle
   const hasPlayedAnimationsRef = useRef(false);
+
+  // Add states for editing titles
+  const [isEditingChatTitle, setIsEditingChatTitle] = useState(false);
+  const [editedChatTitle, setEditedChatTitle] = useState(chatTitle);
+  const [currentChatTitle, setCurrentChatTitle] = useState(chatTitle);
+  const [isEditingArtifactTitle, setIsEditingArtifactTitle] = useState(false);
+  const [editedArtifactTitle, setEditedArtifactTitle] = useState(selectedArtifact?.title || '');
+  const chatTitleInputRef = useRef<HTMLInputElement>(null);
+  const artifactTitleInputRef = useRef<HTMLInputElement>(null);
 
   const MIN_CHAT_WIDTH = 400;
   const MAX_CHAT_WIDTH = 800;
@@ -128,6 +143,79 @@ export default function AssistantChatPage({
       }, 1000);
     }
   }, [initialMessage, isFromHomepage]);
+
+  // Update edited artifact title when selected artifact changes
+  useEffect(() => {
+    if (selectedArtifact) {
+      setEditedArtifactTitle(selectedArtifact.title);
+    }
+  }, [selectedArtifact]);
+
+  // Handle saving chat title
+  const handleSaveChatTitle = () => {
+    if (editedChatTitle.trim()) {
+      if (editedChatTitle !== currentChatTitle) {
+        setCurrentChatTitle(editedChatTitle);
+        toast.success("Chat title updated");
+      }
+    } else {
+      setEditedChatTitle(currentChatTitle);
+    }
+    setIsEditingChatTitle(false);
+  };
+
+  // Handle saving artifact title
+  const handleSaveArtifactTitle = () => {
+    if (editedArtifactTitle.trim() && selectedArtifact) {
+      if (editedArtifactTitle !== selectedArtifact.title) {
+        // Update the selected artifact
+        setSelectedArtifact({
+          ...selectedArtifact,
+          title: editedArtifactTitle
+        });
+        
+        // Also update the title in the messages array
+        setMessages(prevMessages => 
+          prevMessages.map(msg => {
+            if (msg.type === 'artifact' && msg.artifactData?.title === selectedArtifact.title) {
+              return {
+                ...msg,
+                artifactData: {
+                  ...msg.artifactData,
+                  title: editedArtifactTitle
+                }
+              };
+            }
+            return msg;
+          })
+        );
+        
+        toast.success("Artifact title updated");
+      }
+    } else if (selectedArtifact) {
+      setEditedArtifactTitle(selectedArtifact.title);
+    }
+    setIsEditingArtifactTitle(false);
+  };
+
+  // Handle clicking outside of input fields
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatTitleInputRef.current && !chatTitleInputRef.current.contains(event.target as Node)) {
+        handleSaveChatTitle();
+      }
+      if (artifactTitleInputRef.current && !artifactTitleInputRef.current.contains(event.target as Node)) {
+        handleSaveArtifactTitle();
+      }
+    };
+
+    if (isEditingChatTitle || isEditingArtifactTitle) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isEditingChatTitle, isEditingArtifactTitle, editedChatTitle, editedArtifactTitle]);
 
   // Auto-collapse sidebar when artifact panel opens
   // Note: This is a one-time auto-collapse for space optimization.
@@ -277,7 +365,41 @@ export default function AssistantChatPage({
             animate={{ opacity: 1 }}
             transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.5, duration: 0.5 } : {}}
           >
-            <p className="text-neutral-900 font-medium truncate mr-4">{chatTitle}</p>
+            {/* Editable Chat Title */}
+            {isEditingChatTitle ? (
+              <input
+                ref={chatTitleInputRef}
+                type="text"
+                value={editedChatTitle}
+                onChange={(e) => setEditedChatTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveChatTitle();
+                  }
+                }}
+                onFocus={(e) => {
+                  // Move cursor to start and scroll to beginning
+                  setTimeout(() => {
+                    e.target.setSelectionRange(0, 0);
+                    e.target.scrollLeft = 0;
+                  }, 0);
+                }}
+                className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-2 rounded-sm mr-4"
+                style={{ minWidth: '200px', maxWidth: '400px' }}
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => {
+                  setIsEditingChatTitle(true);
+                  setEditedChatTitle(currentChatTitle);
+                }}
+                className="text-neutral-900 font-medium truncate mr-4 px-2 py-1 -ml-2 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer text-left"
+                style={{ minWidth: 0 }}
+              >
+                {currentChatTitle}
+              </button>
+            )}
             
             {/* Conditional buttons based on artifact panel state */}
             {!artifactPanelOpen ? (
@@ -296,20 +418,23 @@ export default function AssistantChatPage({
                   variant="secondary"
                   className="gap-2"
                   style={{ height: '32px' }}
+                  onClick={() => setExportThreadDialogOpen(true)}
                 >
                   <Download size={16} />
                   <span>Export</span>
                 </Button>
                 <Button 
                   variant="secondary"
-                  onClick={() => setSourcesDrawerOpen(true)}
-                  className="gap-2"
+                  onClick={() => setSourcesDrawerOpen(!sourcesDrawerOpen)}
+                  className={cn("gap-2", sourcesDrawerOpen && "bg-neutral-100")}
                   style={{ height: '32px' }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
+                  <img 
+                    src={sourcesDrawerOpen ? "/book-filled.svg" : "/book-outline.svg"}
+                    alt="Sources" 
+                    width={16} 
+                    height={16}
+                  />
                   <span>Sources</span>
                 </Button>
               </div>
@@ -330,15 +455,21 @@ export default function AssistantChatPage({
                     <UserPlus size={16} className="mr-2" />
                     <span>Share</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setExportThreadDialogOpen(true)}>
                     <Download size={16} className="mr-2" />
                     <span>Export</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourcesDrawerOpen(true)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
+                  <DropdownMenuItem 
+                    onClick={() => setSourcesDrawerOpen(!sourcesDrawerOpen)}
+                    className={sourcesDrawerOpen ? "bg-neutral-100" : ""}
+                  >
+                    <img 
+                      src={sourcesDrawerOpen ? "/book-filled.svg" : "/book-outline.svg"}
+                      alt="Sources" 
+                      width={16} 
+                      height={16}
+                      className="mr-2"
+                    />
                     <span>Sources</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -597,10 +728,40 @@ export default function AssistantChatPage({
                   alt="Table" 
                   className="w-[16px] h-[16px]"
                 />
-              {/* Title */}
-              <h2 className="text-neutral-900 font-medium">
-                {selectedArtifact?.title || 'Artifact'}
-              </h2>
+              {/* Editable Artifact Title */}
+              {isEditingArtifactTitle ? (
+                <input
+                  ref={artifactTitleInputRef}
+                  type="text"
+                  value={editedArtifactTitle}
+                  onChange={(e) => setEditedArtifactTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveArtifactTitle();
+                    }
+                  }}
+                  onFocus={(e) => {
+                    // Move cursor to start and scroll to beginning
+                    setTimeout(() => {
+                      e.target.setSelectionRange(0, 0);
+                      e.target.scrollLeft = 0;
+                    }, 0);
+                  }}
+                  className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-1 rounded-sm"
+                  style={{ minWidth: '200px', maxWidth: '400px' }}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsEditingArtifactTitle(true);
+                    setEditedArtifactTitle(selectedArtifact?.title || 'Artifact');
+                  }}
+                  className="text-neutral-900 font-medium px-2 py-1 -ml-1 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  {selectedArtifact?.title || 'Artifact'}
+                </button>
+              )}
             </div>
             
                       <div className="flex gap-2 items-center">
@@ -614,7 +775,9 @@ export default function AssistantChatPage({
                 <span className="text-sm font-normal">Share</span>
               </button>
               {/* Export Button */}
-              <button className="flex items-center gap-2 px-3 py-1.5 border border-neutral-200 rounded-md bg-white hover:bg-neutral-100 transition-colors text-neutral-900 text-sm font-normal" style={{ height: '32px' }}>
+              <button className="flex items-center gap-2 px-3 py-1.5 border border-neutral-200 rounded-md bg-white hover:bg-neutral-100 transition-colors text-neutral-900 text-sm font-normal" style={{ height: '32px' }}
+                onClick={() => setExportReviewDialogOpen(true)}
+              >
                 <Download size={16} className="text-neutral-900" />
                 <span className="text-sm font-normal">Export</span>
               </button>
@@ -653,6 +816,17 @@ export default function AssistantChatPage({
         isOpen={shareArtifactDialogOpen} 
         onClose={() => setShareArtifactDialogOpen(false)} 
         artifactTitle={selectedArtifact?.title || "Artifact"}
+      />
+      
+      {/* Export Dialogs */}
+      <ExportThreadDialog 
+        isOpen={exportThreadDialogOpen} 
+        onClose={() => setExportThreadDialogOpen(false)} 
+      />
+      <ExportReviewDialog 
+        isOpen={exportReviewDialogOpen} 
+        onClose={() => setExportReviewDialogOpen(false)} 
+        artifactTitle={selectedArtifact?.title || "Review"}
       />
         </div>
       </SidebarInset>
