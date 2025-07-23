@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, Download, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { UserPlus, Download, ArrowLeft, ChevronLeft, ChevronRight, X } from "lucide-react";
 import SourcesDrawer from "@/components/sources-drawer";
 import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -59,6 +60,7 @@ export default function AssistantChatPage({
   const { chatId } = use(params);
   const searchParams = useSearchParams();
   const initialMessage = searchParams.get('initialMessage');
+  const router = useRouter();
   
   // Sidebar control hook
   const { setOpen: setSidebarOpen } = useSidebar();
@@ -365,41 +367,55 @@ export default function AssistantChatPage({
             animate={{ opacity: 1 }}
             transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.5, duration: 0.5 } : {}}
           >
-            {/* Editable Chat Title */}
-            {isEditingChatTitle ? (
-              <input
-                ref={chatTitleInputRef}
-                type="text"
-                value={editedChatTitle}
-                onChange={(e) => setEditedChatTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSaveChatTitle();
-                  }
-                }}
-                onFocus={(e) => {
-                  // Move cursor to start and scroll to beginning
-                  setTimeout(() => {
-                    e.target.setSelectionRange(0, 0);
-                    e.target.scrollLeft = 0;
-                  }, 0);
-                }}
-                className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-2 rounded-sm mr-4"
-                style={{ minWidth: '200px', maxWidth: '400px' }}
-                autoFocus
-              />
-            ) : (
+            {/* Back Button, Separator, and Editable Chat Title */}
+            <div className="flex items-center flex-1 min-w-0">
+              {/* Back Button */}
               <button
-                onClick={() => {
-                  setIsEditingChatTitle(true);
-                  setEditedChatTitle(currentChatTitle);
-                }}
-                className="text-neutral-900 font-medium truncate mr-4 px-2 py-1 -ml-2 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer text-left"
-                style={{ minWidth: 0 }}
+                onClick={() => router.push('/assistant')}
+                className="p-2 hover:bg-neutral-100 rounded-md transition-colors mr-1"
               >
-                {currentChatTitle}
+                <ArrowLeft size={16} className="text-neutral-600" />
               </button>
-            )}
+              
+              {/* Vertical Separator */}
+              <div className="w-px bg-neutral-200 mr-3" style={{ height: '20px' }}></div>
+              
+              {/* Editable Chat Title */}
+              {isEditingChatTitle ? (
+                <input
+                  ref={chatTitleInputRef}
+                  type="text"
+                  value={editedChatTitle}
+                  onChange={(e) => setEditedChatTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveChatTitle();
+                    }
+                  }}
+                  onFocus={(e) => {
+                    // Move cursor to start and scroll to beginning
+                    setTimeout(() => {
+                      e.target.setSelectionRange(0, 0);
+                      e.target.scrollLeft = 0;
+                    }, 0);
+                  }}
+                  className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-2 rounded-sm mr-4"
+                  style={{ minWidth: '200px', maxWidth: '400px', transform: 'translateY(1px)' }}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsEditingChatTitle(true);
+                    setEditedChatTitle(currentChatTitle);
+                  }}
+                  className="text-neutral-900 font-medium truncate mr-4 px-2 py-1 -ml-2 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer text-left"
+                  style={{ minWidth: 0, transform: 'translateY(1px)' }}
+                >
+                  {currentChatTitle}
+                </button>
+              )}
+            </div>
             
             {/* Conditional buttons based on artifact panel state */}
             {!artifactPanelOpen ? (
@@ -429,12 +445,16 @@ export default function AssistantChatPage({
                   className={cn("gap-2", sourcesDrawerOpen && "bg-neutral-100")}
                   style={{ height: '32px' }}
                 >
-                  <img 
-                    src={sourcesDrawerOpen ? "/book-filled.svg" : "/book-outline.svg"}
-                    alt="Sources" 
-                    width={16} 
-                    height={16}
-                  />
+                  {sourcesDrawerOpen ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M7 2C5.34315 2 4 3.34315 4 5V19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7ZM6 19C6 19.5523 6.44772 20 7 20H18V18H7C6.44772 18 6 18.4477 6 19Z" fill="currentColor"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7C5.34315 2 4 3.34315 4 5V19Z" />
+                      <path d="M20 17H7C5.89543 17 5 17.8954 5 19" />
+                    </svg>
+                  )}
                   <span>Sources</span>
                 </Button>
               </div>
@@ -463,13 +483,16 @@ export default function AssistantChatPage({
                     onClick={() => setSourcesDrawerOpen(!sourcesDrawerOpen)}
                     className={sourcesDrawerOpen ? "bg-neutral-100" : ""}
                   >
-                    <img 
-                      src={sourcesDrawerOpen ? "/book-filled.svg" : "/book-outline.svg"}
-                      alt="Sources" 
-                      width={16} 
-                      height={16}
-                      className="mr-2"
-                    />
+                    {sourcesDrawerOpen ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M7 2C5.34315 2 4 3.34315 4 5V19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7ZM6 19C6 19.5523 6.44772 20 7 20H18V18H7C6.44772 18 6 18.4477 6 19Z" fill="currentColor"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M4 19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7C5.34315 2 4 3.34315 4 5V19Z" />
+                        <path d="M20 17H7C5.89543 17 5 17.8954 5 19" />
+                      </svg>
+                    )}
                     <span>Sources</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -721,7 +744,7 @@ export default function AssistantChatPage({
           >
           {/* Header */}
           <div className="px-3 py-4 border-b border-neutral-200 bg-neutral-0 flex items-center justify-between" style={{ height: '52px' }}>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               {/* Table Icon */}
                 <img 
                   src="/table-outline.svg" 
@@ -748,7 +771,7 @@ export default function AssistantChatPage({
                     }, 0);
                   }}
                   className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-1 rounded-sm"
-                  style={{ minWidth: '200px', maxWidth: '400px' }}
+                  style={{ minWidth: '200px', maxWidth: '400px', transform: 'translateY(1px)' }}
                   autoFocus
                 />
               ) : (
@@ -758,6 +781,7 @@ export default function AssistantChatPage({
                     setEditedArtifactTitle(selectedArtifact?.title || 'Artifact');
                   }}
                   className="text-neutral-900 font-medium px-2 py-1 -ml-1 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer"
+                  style={{ transform: 'translateY(1px)' }}
                 >
                   {selectedArtifact?.title || 'Artifact'}
                 </button>
