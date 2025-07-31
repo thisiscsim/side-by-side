@@ -221,7 +221,7 @@ export default function FileManagementDialog({ isOpen, onClose }: FileManagement
                   <div className="text-center">
                     <Upload className="h-12 w-12 text-neutral-400 mx-auto mb-3" />
                     <p className="text-sm text-neutral-600 mb-2">Drag and drop files here or click to browse</p>
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="default">
                       Select files
                     </Button>
                   </div>

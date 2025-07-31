@@ -16,7 +16,6 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 
 interface DraftArtifactPanelProps {
-  isOpen: boolean;
   selectedArtifact: { title: string; subtitle: string } | null;
   isEditingArtifactTitle: boolean;
   editedArtifactTitle: string;

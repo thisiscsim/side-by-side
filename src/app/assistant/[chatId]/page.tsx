@@ -925,7 +925,6 @@ export default function AssistantChatPage({
       <AnimatePresence>
         {draftArtifactPanelOpen && (
           <DraftArtifactPanel
-            isOpen={draftArtifactPanelOpen}
             selectedArtifact={selectedDraftArtifact}
             isEditingArtifactTitle={isEditingDraftArtifactTitle}
             editedArtifactTitle={editedDraftArtifactTitle}
@@ -956,7 +955,6 @@ export default function AssistantChatPage({
       <AnimatePresence>
         {reviewArtifactPanelOpen && (
           <ReviewArtifactPanel
-            isOpen={reviewArtifactPanelOpen}
             selectedArtifact={selectedReviewArtifact}
             isEditingArtifactTitle={isEditingReviewArtifactTitle}
             editedArtifactTitle={editedReviewArtifactTitle}
@@ -985,7 +983,6 @@ export default function AssistantChatPage({
       <AnimatePresence>
         {artifactPanelOpen && (
           <ReviewArtifactPanel
-            isOpen={artifactPanelOpen}
             selectedArtifact={selectedArtifact}
             isEditingArtifactTitle={isEditingArtifactTitle}
             editedArtifactTitle={editedArtifactTitle}
