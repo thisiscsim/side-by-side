@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -9,21 +9,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, Download, ArrowLeft, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { UserPlus, Download, ArrowLeft, X, Plus, ListPlus, Settings2, Wand } from "lucide-react";
 import SourcesDrawer from "@/components/sources-drawer";
 import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
 import ExportThreadDialog from "@/components/export-thread-dialog";
 import ExportReviewDialog from "@/components/export-review-dialog";
-import ReviewTableToolbar from "@/components/review-table-toolbar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import ReviewTableArtifactCard from "@/components/review-table-artifact-card";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
+import DraftArtifactPanel from "@/components/draft-artifact-panel";
+import ReviewArtifactPanel from "@/components/review-artifact-panel";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Spinner } from "@/components/ui/spinner";
+import FileManagementDialog from "@/components/file-management-dialog";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -32,6 +35,7 @@ type Message = {
   artifactData?: {
     title: string;
     subtitle: string;
+    variant?: 'review' | 'draft'; // Determines which panel to open
   };
 };
 
@@ -65,11 +69,25 @@ export default function AssistantChatPage({
   // Sidebar control hook
   const { setOpen: setSidebarOpen } = useSidebar();
   
+  // Hook to detect if viewport is above 2xl breakpoint (1536px)
+  const [isAbove2xl, setIsAbove2xl] = useState(false);
+  
+  useEffect(() => {
+    const checkBreakpoint = () => {
+      setIsAbove2xl(window.innerWidth >= 1536);
+    };
+    
+    checkBreakpoint();
+    window.addEventListener('resize', checkBreakpoint);
+    return () => window.removeEventListener('resize', checkBreakpoint);
+  }, []);
+  
   // Use the initial message as the title if it's a new chat
   const chatTitle = getChatTitle(chatId) === 'Chat' && initialMessage ? initialMessage : getChatTitle(chatId);
   
   const [messages, setMessages] = useState<Array<Message>>([]);
   const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const [chatWidth, setChatWidth] = useState(401);
   const [isResizing, setIsResizing] = useState(false);
@@ -80,7 +98,12 @@ export default function AssistantChatPage({
   const [exportThreadDialogOpen, setExportThreadDialogOpen] = useState(false);
   const [exportReviewDialogOpen, setExportReviewDialogOpen] = useState(false);
   const [artifactPanelOpen, setArtifactPanelOpen] = useState(false);
+  const [draftArtifactPanelOpen, setDraftArtifactPanelOpen] = useState(false);
+  const [reviewArtifactPanelOpen, setReviewArtifactPanelOpen] = useState(false);
   const [selectedArtifact, setSelectedArtifact] = useState<{ title: string; subtitle: string } | null>(null);
+  const [selectedDraftArtifact, setSelectedDraftArtifact] = useState<{ title: string; subtitle: string } | null>(null);
+  const [selectedReviewArtifact, setSelectedReviewArtifact] = useState<{ title: string; subtitle: string } | null>(null);
+  const [isFileManagementOpen, setIsFileManagementOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasProcessedInitialMessageRef = useRef(false);
   
@@ -89,6 +112,9 @@ export default function AssistantChatPage({
   
   // Track if we've already auto-collapsed the sidebar for this artifact session
   const hasAutoCollapsedSidebarRef = useRef(false);
+  
+  // Check if any artifact panel is open
+  const anyArtifactPanelOpen = artifactPanelOpen || draftArtifactPanelOpen || reviewArtifactPanelOpen;
   
   // Check if we're coming from the assistant homepage
   const [isFromHomepage] = useState(() => {
@@ -111,8 +137,17 @@ export default function AssistantChatPage({
   const [currentChatTitle, setCurrentChatTitle] = useState(chatTitle);
   const [isEditingArtifactTitle, setIsEditingArtifactTitle] = useState(false);
   const [editedArtifactTitle, setEditedArtifactTitle] = useState(selectedArtifact?.title || '');
+  
+  const [isEditingDraftArtifactTitle, setIsEditingDraftArtifactTitle] = useState(false);
+  const [editedDraftArtifactTitle, setEditedDraftArtifactTitle] = useState(selectedDraftArtifact?.title || '');
+  
+  const [isEditingReviewArtifactTitle, setIsEditingReviewArtifactTitle] = useState(false);
+  const [editedReviewArtifactTitle, setEditedReviewArtifactTitle] = useState(selectedReviewArtifact?.title || '');
+  
   const chatTitleInputRef = useRef<HTMLInputElement>(null);
   const artifactTitleInputRef = useRef<HTMLInputElement>(null);
+  const draftArtifactTitleInputRef = useRef<HTMLInputElement>(null);
+  const reviewArtifactTitleInputRef = useRef<HTMLInputElement>(null);
 
   const MIN_CHAT_WIDTH = 400;
   const MAX_CHAT_WIDTH = 800;
@@ -123,26 +158,47 @@ export default function AssistantChatPage({
       hasProcessedInitialMessageRef.current = true;
       // Add the user message
       setMessages([{ role: 'user', content: initialMessage, type: 'text' }]);
+      setIsLoading(true);
+      
+      // Auto-expand sources drawer for first-time users from homepage when loading starts
+      if (isFromHomepage) {
+        setTimeout(() => {
+          setSourcesDrawerOpen(true);
+        }, 1000); // Open drawer during AI thinking time
+      }
+      
+      // Determine artifact type based on initial message keywords
+          const messageText = initialMessage.toLowerCase();
+    const isDraftArtifact = messageText.includes('draft') || messageText.includes('document');
       
       // Simulate AI response
       setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'Here is a review table extracting terms from the industrial merger agreements as requested',
-          type: 'artifact',
-          artifactData: {
-            title: 'Extraction of Agreements and Provisions',
-            subtitle: '24 columns · 104 rows'
-          }
-        }]);
-        
-        // Auto-expand sources drawer for first-time users from homepage
-        if (isFromHomepage) {
-          setTimeout(() => {
-            setSourcesDrawerOpen(true);
-          }, 500); // Small delay after the AI response is rendered
+        if (isDraftArtifact) {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Here is a draft document based on your request',
+            type: 'artifact',
+            artifactData: {
+              title: 'Record of Deliberation',
+              subtitle: 'Version 1',
+              variant: 'draft'
+            }
+          }]);
+        } else {
+          // Default to review artifact for initial message
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'Here is a review table extracting terms from the industrial merger agreements as requested',
+            type: 'artifact',
+            artifactData: {
+              title: 'Extraction of Agreements and Provisions',
+              subtitle: '24 columns · 104 rows',
+              variant: 'review'
+            }
+          }]);
         }
-      }, 1000);
+        setIsLoading(false);
+      }, 3500); // Increased to 3.5 seconds to simulate AI thinking time
     }
   }, [initialMessage, isFromHomepage]);
 
@@ -153,8 +209,22 @@ export default function AssistantChatPage({
     }
   }, [selectedArtifact]);
 
+  // Update edited draft artifact title when selected draft artifact changes
+  useEffect(() => {
+    if (selectedDraftArtifact) {
+      setEditedDraftArtifactTitle(selectedDraftArtifact.title);
+    }
+  }, [selectedDraftArtifact]);
+
+  // Update edited review artifact title when selected review artifact changes
+  useEffect(() => {
+    if (selectedReviewArtifact) {
+      setEditedReviewArtifactTitle(selectedReviewArtifact.title);
+    }
+  }, [selectedReviewArtifact]);
+
   // Handle saving chat title
-  const handleSaveChatTitle = () => {
+  const handleSaveChatTitle = useCallback(() => {
     if (editedChatTitle.trim()) {
       if (editedChatTitle !== currentChatTitle) {
         setCurrentChatTitle(editedChatTitle);
@@ -164,10 +234,10 @@ export default function AssistantChatPage({
       setEditedChatTitle(currentChatTitle);
     }
     setIsEditingChatTitle(false);
-  };
+  }, [editedChatTitle, currentChatTitle]);
 
   // Handle saving artifact title
-  const handleSaveArtifactTitle = () => {
+  const handleSaveArtifactTitle = useCallback(() => {
     if (editedArtifactTitle.trim() && selectedArtifact) {
       if (editedArtifactTitle !== selectedArtifact.title) {
         // Update the selected artifact
@@ -198,7 +268,75 @@ export default function AssistantChatPage({
       setEditedArtifactTitle(selectedArtifact.title);
     }
     setIsEditingArtifactTitle(false);
-  };
+  }, [editedArtifactTitle, selectedArtifact]);
+
+  // Handle saving draft artifact title
+  const handleSaveDraftArtifactTitle = useCallback(() => {
+    if (editedDraftArtifactTitle.trim() && selectedDraftArtifact) {
+      if (editedDraftArtifactTitle !== selectedDraftArtifact.title) {
+        // Update the selected draft artifact
+        setSelectedDraftArtifact({
+          ...selectedDraftArtifact,
+          title: editedDraftArtifactTitle
+        });
+        
+        // Also update the title in the messages array
+        setMessages(prevMessages => 
+          prevMessages.map(msg => {
+            if (msg.type === 'artifact' && msg.artifactData?.title === selectedDraftArtifact.title) {
+              return {
+                ...msg,
+                artifactData: {
+                  ...msg.artifactData,
+                  title: editedDraftArtifactTitle
+                }
+              };
+            }
+            return msg;
+          })
+        );
+        
+        toast.success("Draft artifact title updated");
+      }
+    } else if (selectedDraftArtifact) {
+      setEditedDraftArtifactTitle(selectedDraftArtifact.title);
+    }
+    setIsEditingDraftArtifactTitle(false);
+  }, [editedDraftArtifactTitle, selectedDraftArtifact]);
+
+  // Handle saving review artifact title
+  const handleSaveReviewArtifactTitle = useCallback(() => {
+    if (editedReviewArtifactTitle.trim() && selectedReviewArtifact) {
+      if (editedReviewArtifactTitle !== selectedReviewArtifact.title) {
+        // Update the selected review artifact
+        setSelectedReviewArtifact({
+          ...selectedReviewArtifact,
+          title: editedReviewArtifactTitle
+        });
+        
+        // Also update the title in the messages array
+        setMessages(prevMessages => 
+          prevMessages.map(msg => {
+            if (msg.type === 'artifact' && msg.artifactData?.title === selectedReviewArtifact.title) {
+              return {
+                ...msg,
+                artifactData: {
+                  ...msg.artifactData,
+                  title: editedReviewArtifactTitle
+                }
+              };
+            }
+            return msg;
+          })
+        );
+        
+        toast.success("Review artifact title updated");
+      }
+    } else if (selectedReviewArtifact) {
+      setEditedReviewArtifactTitle(selectedReviewArtifact.title);
+    }
+    setIsEditingReviewArtifactTitle(false);
+  }, [editedReviewArtifactTitle, selectedReviewArtifact]);
 
   // Handle clicking outside of input fields
   useEffect(() => {
@@ -209,29 +347,35 @@ export default function AssistantChatPage({
       if (artifactTitleInputRef.current && !artifactTitleInputRef.current.contains(event.target as Node)) {
         handleSaveArtifactTitle();
       }
+      if (draftArtifactTitleInputRef.current && !draftArtifactTitleInputRef.current.contains(event.target as Node)) {
+        handleSaveDraftArtifactTitle();
+      }
+      if (reviewArtifactTitleInputRef.current && !reviewArtifactTitleInputRef.current.contains(event.target as Node)) {
+        handleSaveReviewArtifactTitle();
+      }
     };
 
-    if (isEditingChatTitle || isEditingArtifactTitle) {
+    if (isEditingChatTitle || isEditingArtifactTitle || isEditingDraftArtifactTitle || isEditingReviewArtifactTitle) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [isEditingChatTitle, isEditingArtifactTitle, editedChatTitle, editedArtifactTitle]);
+  }, [isEditingChatTitle, isEditingArtifactTitle, isEditingDraftArtifactTitle, isEditingReviewArtifactTitle, editedChatTitle, editedArtifactTitle, editedDraftArtifactTitle, editedReviewArtifactTitle, handleSaveChatTitle, handleSaveArtifactTitle, handleSaveDraftArtifactTitle, handleSaveReviewArtifactTitle]);
 
   // Auto-collapse sidebar when artifact panel opens
   // Note: This is a one-time auto-collapse for space optimization.
   // Users can still manually expand the sidebar afterward using the avatar button,
   // sidebar rail, or keyboard shortcut (Cmd/Ctrl + B).
   useEffect(() => {
-    if (artifactPanelOpen && !hasAutoCollapsedSidebarRef.current) {
+    if (anyArtifactPanelOpen && !hasAutoCollapsedSidebarRef.current) {
       setSidebarOpen(false);
       hasAutoCollapsedSidebarRef.current = true;
-    } else if (!artifactPanelOpen) {
+    } else if (!anyArtifactPanelOpen) {
       // Reset the flag when artifact panel closes
       hasAutoCollapsedSidebarRef.current = false;
     }
-  }, [artifactPanelOpen, setSidebarOpen]);
+  }, [anyArtifactPanelOpen, setSidebarOpen]);
 
   // Reset chat toggling flag when chat closes
   useEffect(() => {
@@ -247,9 +391,11 @@ export default function AssistantChatPage({
   };
 
   const sendMessage = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !isLoading) {
+      const userMessage = inputValue.toLowerCase();
       setMessages([...messages, { role: 'user', content: inputValue, type: 'text' }]);
       setInputValue('');
+      setIsLoading(true);
       
       // Reset textarea height
       const textarea = document.querySelector('textarea');
@@ -258,23 +404,51 @@ export default function AssistantChatPage({
         textarea.style.height = '60px'; // Reset to minHeight
       }
       
+      // Open sources drawer when AI starts loading (for subsequent messages)
+      if (!sourcesDrawerOpen) {
+        setTimeout(() => {
+          setSourcesDrawerOpen(true);
+        }, 1000); // Open drawer during AI thinking time
+      }
+      
+      // Determine artifact type based on keywords
+      const isDraftArtifact = userMessage.includes('draft') || userMessage.includes('document');
+      const isReviewArtifact = userMessage.includes('review') || userMessage.includes('table');
+      
       // Simulate AI response with artifact (you can replace this with actual AI integration)
       setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'Here is a review table extracting terms from the industrial merger agreements as requested',
-          type: 'artifact',
-          artifactData: {
-            title: 'Extraction of Agreements and Provisions',
-            subtitle: '24 columns · 104 rows'
-          }
-        }]);
-      }, 1000);
+        if (isDraftArtifact || isReviewArtifact) {
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: isDraftArtifact 
+              ? 'Here is a draft document based on your request'
+              : 'Here is a review table extracting terms from the industrial merger agreements as requested',
+            type: 'artifact',
+            artifactData: {
+              title: isDraftArtifact 
+                ? 'Record of Deliberation'
+                : 'Extraction of Agreements and Provisions',
+              subtitle: isDraftArtifact 
+                ? 'Version 1'
+                : '24 columns · 104 rows',
+              variant: isDraftArtifact ? 'draft' : 'review'
+            }
+          }]);
+        } else {
+          // Regular text response if no keywords match
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'I can help you with that. Please specify if you need a "draft" document or a "review" table.',
+            type: 'text'
+          }]);
+        }
+        setIsLoading(false);
+      }, 3500); // Increased to 3.5 seconds to simulate AI thinking time
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!artifactPanelOpen) return;
+    if (!artifactPanelOpen && !draftArtifactPanelOpen && !reviewArtifactPanelOpen) return;
     e.preventDefault();
     setIsResizing(true);
   };
@@ -329,7 +503,7 @@ export default function AssistantChatPage({
               <motion.div 
                 initial={isChatToggling ? { width: 0, opacity: 0 } : false}
                 animate={{ 
-                  width: artifactPanelOpen ? chatWidth : (sourcesDrawerOpen && !artifactPanelOpen ? 'calc(100% - 400px)' : '100%'),
+                  width: anyArtifactPanelOpen ? chatWidth : (sourcesDrawerOpen ? 'calc(100% - 400px)' : '100%'),
                   opacity: 1
                 }}
                 exit={{ width: 0, opacity: 0 }}
@@ -348,17 +522,10 @@ export default function AssistantChatPage({
                 }}
               >
         <div className="flex flex-col bg-white relative" style={{ 
-          width: artifactPanelOpen ? chatWidth - 1 : '100%',
+          width: anyArtifactPanelOpen ? chatWidth - 1 : '100%',
           minWidth: 0
         }}>
-          {/* Sources Drawer - Embedded variant when artifact panel is open */}
-          {artifactPanelOpen && (
-            <SourcesDrawer 
-              isOpen={sourcesDrawerOpen} 
-              onClose={() => setSourcesDrawerOpen(false)}
-              variant="embedded"
-            />
-          )}
+
           {/* Header */}
           <motion.div 
             className="px-3 py-4 border-b border-neutral-200 flex items-center justify-between" 
@@ -399,8 +566,11 @@ export default function AssistantChatPage({
                       e.target.scrollLeft = 0;
                     }, 0);
                   }}
-                  className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-2 rounded-sm mr-4"
-                  style={{ minWidth: '200px', maxWidth: '400px', transform: 'translateY(1px)' }}
+                  className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1.5 -ml-2 rounded-md mr-4 text-sm"
+                  style={{ 
+                    width: `${Math.min(Math.max(editedChatTitle.length * 8 + 40, 120), 600)}px`,
+                    height: '32px'
+                  }}
                   autoFocus
                 />
               ) : (
@@ -409,8 +579,8 @@ export default function AssistantChatPage({
                     setIsEditingChatTitle(true);
                     setEditedChatTitle(currentChatTitle);
                   }}
-                  className="text-neutral-900 font-medium truncate mr-4 px-2 py-1 -ml-2 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer text-left"
-                  style={{ minWidth: 0, transform: 'translateY(1px)' }}
+                  className="text-neutral-900 font-medium truncate mr-4 px-2 py-1.5 -ml-2 rounded-md hover:bg-neutral-100 transition-colors cursor-pointer text-left text-sm"
+                  style={{ minWidth: 0, height: '32px' }}
                 >
                   {currentChatTitle}
                 </button>
@@ -418,7 +588,7 @@ export default function AssistantChatPage({
             </div>
             
             {/* Conditional buttons based on artifact panel state */}
-            {!artifactPanelOpen ? (
+            {!artifactPanelOpen && !draftArtifactPanelOpen && !reviewArtifactPanelOpen ? (
               // When artifact panel is collapsed, show full secondary buttons
               <div className="flex gap-2 items-center">
                 <Button 
@@ -541,15 +711,28 @@ export default function AssistantChatPage({
                                                 <ReviewTableArtifactCard
                           title={message.artifactData?.title || 'Artifact'}
                           subtitle={message.artifactData?.subtitle || ''}
-                          variant={artifactPanelOpen ? 'small' : 'large'}
-                          isSelected={artifactPanelOpen && selectedArtifact?.title === message.artifactData?.title}
+                          variant={anyArtifactPanelOpen ? 'small' : 'large'}
+                          isSelected={anyArtifactPanelOpen && (
+                            (message.artifactData?.variant === 'draft' && selectedDraftArtifact?.title === message.artifactData?.title) ||
+                            (message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
+                          )}
+                          iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
                                                       onClick={() => {
-                            // Open artifact panel and set selected artifact
-                            setSelectedArtifact({
-                              title: message.artifactData?.title || 'Artifact',
-                              subtitle: message.artifactData?.subtitle || ''
-                            });
-                            setArtifactPanelOpen(true);
+                            // Open appropriate panel based on artifact variant
+                            if (message.artifactData?.variant === 'draft') {
+                              setSelectedDraftArtifact({
+                                title: message.artifactData?.title || 'Artifact',
+                                subtitle: message.artifactData?.subtitle || ''
+                              });
+                              setDraftArtifactPanelOpen(true);
+                            } else {
+                              // Default to review panel for review variant or no variant
+                              setSelectedReviewArtifact({
+                                title: message.artifactData?.title || 'Artifact',
+                                subtitle: message.artifactData?.subtitle || ''
+                              });
+                              setReviewArtifactPanelOpen(true);
+                            }
                           }}
                         />
                       </div>
@@ -582,7 +765,7 @@ export default function AssistantChatPage({
             }}
           >
             <div className="mx-auto" style={{ maxWidth: '832px' }}>
-              <div className="p-4 transition-all duration-200 border border-transparent focus-within:border-neutral-300 bg-neutral-100" style={{ borderRadius: '12px' }}>
+              <div className="pl-2 pr-3 pt-4 pb-3 transition-all duration-200 border border-transparent focus-within:border-neutral-300 bg-neutral-100 flex flex-col" style={{ borderRadius: '12px', minHeight: '160px' }}>
               {/* Textarea */}
               <textarea
                 value={inputValue}
@@ -592,46 +775,49 @@ export default function AssistantChatPage({
                   e.target.style.height = 'auto';
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && (e.preventDefault(), sendMessage())}
                 placeholder="Request a revision or ask a question..."
-                className="w-full bg-transparent focus:outline-none text-neutral-900 placeholder-neutral-500 resize-none overflow-hidden"
+                className="w-full bg-transparent focus:outline-none text-neutral-900 placeholder-neutral-500 resize-none overflow-hidden flex-1 px-2"
                 style={{ 
                   fontSize: '14px', 
                   lineHeight: '20px',
                   minHeight: '60px',
                   maxHeight: '300px'
                 }}
-                rows={3}
               />
               
               {/* Controls Row */}
-              <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center justify-between mt-3" data-artifact-open={anyArtifactPanelOpen}>
                 {/* Left Controls */}
-                <div className="flex items-center space-x-2">
-                  {/* Paperclip Icon */}
-                  <button className="text-neutral-600 hover:text-neutral-800 p-1 hover:bg-neutral-200 rounded">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                    </svg>
+                                  <div className="flex items-center">
+                    {/* Files and sources */}
+                    <button 
+                      onClick={() => setIsFileManagementOpen(true)}
+                      className={`flex items-center gap-1.5 h-8 px-2 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-200 rounded-md transition-colors`}
+                    >
+                      <Plus size={16} />
+                      {!anyArtifactPanelOpen && <span className="text-sm font-normal">Files and sources</span>}
+                    </button>
+                  
+                  {/* Prompts */}
+                  <button className={`flex items-center gap-1.5 h-8 px-2 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-200 rounded-md transition-colors`}>
+                    <ListPlus size={16} />
+                    {!anyArtifactPanelOpen && <span className="text-sm font-normal">Prompts</span>}
                   </button>
                   
-                  {/* Mic Icon */}
-                  <button className="text-neutral-600 hover:text-neutral-800 p-1 hover:bg-neutral-200 rounded">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                      <line x1="12" y1="19" x2="12" y2="23"/>
-                      <line x1="8" y1="23" x2="16" y2="23"/>
-                    </svg>
+                  {/* Divider */}
+                  <div className="w-px bg-neutral-200" style={{ height: '20px', marginLeft: '4px', marginRight: '4px' }}></div>
+                  
+                  {/* Customize */}
+                  <button className={`flex items-center gap-1.5 h-8 px-2 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-200 rounded-md transition-colors`}>
+                    <Settings2 size={16} />
+                    {!anyArtifactPanelOpen && <span className="text-sm font-normal">Customize</span>}
                   </button>
                   
-                  {/* Image Icon */}
-                  <button className="text-neutral-600 hover:text-neutral-800 p-1 hover:bg-neutral-200 rounded">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                      <circle cx="9" cy="9" r="2"/>
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-                    </svg>
+                  {/* Improve */}
+                  <button className={`flex items-center gap-1.5 h-8 px-2 text-neutral-600 hover:text-neutral-800 hover:bg-neutral-200 rounded-md transition-colors`}>
+                    <Wand size={16} />
+                    {!anyArtifactPanelOpen && <span className="text-sm font-normal">Improve</span>}
                   </button>
                 </div>
                 
@@ -640,20 +826,26 @@ export default function AssistantChatPage({
                   {/* Send Button */}
                   <button
                     onClick={sendMessage}
-                    disabled={!inputValue.trim()}
+                    disabled={!inputValue.trim() || isLoading}
                     className={`p-2 focus:outline-none flex items-center justify-center transition-all bg-neutral-900 text-neutral-0 hover:bg-neutral-800 ${
-                      !inputValue.trim() ? 'cursor-not-allowed' : ''
+                      !inputValue.trim() || isLoading ? 'cursor-not-allowed' : ''
                     }`}
                     style={{ 
                       minWidth: '32px', 
                       minHeight: '32px',
                       borderRadius: '6px',
-                      opacity: !inputValue.trim() ? 0.3 : 1
+                      opacity: !inputValue.trim() || isLoading ? 0.3 : 1
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
+                    {isLoading ? (
+                      <div className="w-4 h-4 flex items-center justify-center">
+                        <Spinner size="sm" />
+                      </div>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
@@ -663,7 +855,7 @@ export default function AssistantChatPage({
         </div>
         
         {/* Resizable Separator - Only show when artifact panel is open */}
-        {artifactPanelOpen && (
+        {anyArtifactPanelOpen && (
           <div 
             className="relative group"
             onMouseEnter={() => setIsHoveringResizer(true)}
@@ -692,9 +884,9 @@ export default function AssistantChatPage({
       )}
       </AnimatePresence>
       
-      {/* Sources Panel - Shows when artifact panel is closed */}
+      {/* Sources Panel - Shows as second panel when artifact is closed */}
       <AnimatePresence>
-        {!artifactPanelOpen && sourcesDrawerOpen && (
+                  {sourcesDrawerOpen && !anyArtifactPanelOpen && (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 400, opacity: 1 }}
@@ -729,106 +921,141 @@ export default function AssistantChatPage({
         )}
       </AnimatePresence>
       
-      {/* Artifact Panel - Right Panel */}
+      {/* Draft Artifact Panel - Right Panel */}
+      <AnimatePresence>
+        {draftArtifactPanelOpen && (
+          <DraftArtifactPanel
+            isOpen={draftArtifactPanelOpen}
+            selectedArtifact={selectedDraftArtifact}
+            isEditingArtifactTitle={isEditingDraftArtifactTitle}
+            editedArtifactTitle={editedDraftArtifactTitle}
+            onEditedArtifactTitleChange={setEditedDraftArtifactTitle}
+            onStartEditingTitle={() => {
+              setIsEditingDraftArtifactTitle(true);
+              setEditedDraftArtifactTitle(selectedDraftArtifact?.title || 'Artifact');
+            }}
+            onSaveTitle={handleSaveDraftArtifactTitle}
+            onClose={() => {
+              setDraftArtifactPanelOpen(false);
+              setSelectedDraftArtifact(null);
+            }}
+            chatOpen={chatOpen}
+            onToggleChat={toggleChat}
+            shareArtifactDialogOpen={shareArtifactDialogOpen}
+            onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
+            exportReviewDialogOpen={exportReviewDialogOpen}
+            onExportReviewDialogOpenChange={setExportReviewDialogOpen}
+            artifactTitleInputRef={draftArtifactTitleInputRef}
+            sourcesDrawerOpen={sourcesDrawerOpen}
+            onSourcesDrawerOpenChange={setSourcesDrawerOpen}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Review Artifact Panel - Right Panel */}
+      <AnimatePresence>
+        {reviewArtifactPanelOpen && (
+          <ReviewArtifactPanel
+            isOpen={reviewArtifactPanelOpen}
+            selectedArtifact={selectedReviewArtifact}
+            isEditingArtifactTitle={isEditingReviewArtifactTitle}
+            editedArtifactTitle={editedReviewArtifactTitle}
+            onEditedArtifactTitleChange={setEditedReviewArtifactTitle}
+            onStartEditingTitle={() => {
+              setIsEditingReviewArtifactTitle(true);
+              setEditedReviewArtifactTitle(selectedReviewArtifact?.title || 'Artifact');
+            }}
+            onSaveTitle={handleSaveReviewArtifactTitle}
+            onClose={() => {
+              setReviewArtifactPanelOpen(false);
+              setSelectedReviewArtifact(null);
+            }}
+            chatOpen={chatOpen}
+            onToggleChat={toggleChat}
+            shareArtifactDialogOpen={shareArtifactDialogOpen}
+            onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
+            exportReviewDialogOpen={exportReviewDialogOpen}
+            onExportReviewDialogOpenChange={setExportReviewDialogOpen}
+            artifactTitleInputRef={reviewArtifactTitleInputRef}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Legacy Artifact Panel - For backward compatibility */}
       <AnimatePresence>
         {artifactPanelOpen && (
+          <ReviewArtifactPanel
+            isOpen={artifactPanelOpen}
+            selectedArtifact={selectedArtifact}
+            isEditingArtifactTitle={isEditingArtifactTitle}
+            editedArtifactTitle={editedArtifactTitle}
+            onEditedArtifactTitleChange={setEditedArtifactTitle}
+            onStartEditingTitle={() => {
+              setIsEditingArtifactTitle(true);
+              setEditedArtifactTitle(selectedArtifact?.title || 'Artifact');
+            }}
+            onSaveTitle={handleSaveArtifactTitle}
+            onClose={() => {
+              setArtifactPanelOpen(false);
+              setSelectedArtifact(null);
+            }}
+            chatOpen={chatOpen}
+            onToggleChat={toggleChat}
+            shareArtifactDialogOpen={shareArtifactDialogOpen}
+            onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
+            exportReviewDialogOpen={exportReviewDialogOpen}
+            onExportReviewDialogOpenChange={setExportReviewDialogOpen}
+            artifactTitleInputRef={artifactTitleInputRef}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Sources Panel - Shows as third panel when artifact is open and above 2xl */}
+      <AnimatePresence>
+        {sourcesDrawerOpen && (artifactPanelOpen || draftArtifactPanelOpen || reviewArtifactPanelOpen) && isAbove2xl && (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '100%', opacity: 1 }}
+            animate={{ width: 400, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{
               width: PANEL_ANIMATION,
               opacity: { duration: 0.15, ease: "easeOut" }
             }}
-            className="flex-1 flex flex-col bg-neutral-50 overflow-hidden"
+            className="h-full bg-white border-l border-neutral-200 flex flex-col overflow-hidden"
+            style={{ 
+              flexShrink: 0
+            }}
           >
-          {/* Header */}
-          <div className="px-3 py-4 border-b border-neutral-200 bg-neutral-0 flex items-center justify-between" style={{ height: '52px' }}>
-            <div className="flex items-center gap-1">
-              {/* Table Icon */}
-                <img 
-                  src="/table-outline.svg" 
-                  alt="Table" 
-                  className="w-[16px] h-[16px]"
-                />
-              {/* Editable Artifact Title */}
-              {isEditingArtifactTitle ? (
-                <input
-                  ref={artifactTitleInputRef}
-                  type="text"
-                  value={editedArtifactTitle}
-                  onChange={(e) => setEditedArtifactTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSaveArtifactTitle();
-                    }
-                  }}
-                  onFocus={(e) => {
-                    // Move cursor to start and scroll to beginning
-                    setTimeout(() => {
-                      e.target.setSelectionRange(0, 0);
-                      e.target.scrollLeft = 0;
-                    }, 0);
-                  }}
-                  className="text-neutral-900 font-medium bg-neutral-100 border border-neutral-400 outline-none px-2 py-1 -ml-1 rounded-sm"
-                  style={{ minWidth: '200px', maxWidth: '400px', transform: 'translateY(1px)' }}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsEditingArtifactTitle(true);
-                    setEditedArtifactTitle(selectedArtifact?.title || 'Artifact');
-                  }}
-                  className="text-neutral-900 font-medium px-2 py-1 -ml-1 rounded-sm hover:bg-neutral-100 transition-colors cursor-pointer"
-                  style={{ transform: 'translateY(1px)' }}
-                >
-                  {selectedArtifact?.title || 'Artifact'}
-                </button>
-              )}
+            {/* Header */}
+            <div className="px-3 py-4 border-b border-neutral-200 flex items-center justify-between" style={{ height: '52px' }}>
+              <p className="text-neutral-900 font-medium truncate mr-4">Sources</p>
+              <button
+                onClick={() => setSourcesDrawerOpen(false)}
+                className="p-2 hover:bg-neutral-100 rounded-md transition-colors"
+              >
+                <X size={16} className="text-neutral-600" />
+              </button>
             </div>
             
-                      <div className="flex gap-2 items-center">
-            {/* Share Button */}
-              <button 
-                onClick={() => setShareArtifactDialogOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 border border-neutral-200 rounded-md bg-white hover:bg-neutral-100 transition-colors text-neutral-900 text-sm font-normal" 
-                style={{ height: '32px' }}
-              >
-                <UserPlus size={16} className="text-neutral-900" />
-                <span className="text-sm font-normal">Share</span>
-              </button>
-              {/* Export Button */}
-              <button className="flex items-center gap-2 px-3 py-1.5 border border-neutral-200 rounded-md bg-white hover:bg-neutral-100 transition-colors text-neutral-900 text-sm font-normal" style={{ height: '32px' }}
-                onClick={() => setExportReviewDialogOpen(true)}
-              >
-                <Download size={16} className="text-neutral-900" />
-                <span className="text-sm font-normal">Export</span>
-              </button>
-            </div>
-          </div>
-
-                  {/* Toolbar */}
-        <ReviewTableToolbar
-          chatOpen={chatOpen}
-          onToggleChat={() => {
-            console.log('Toggle button clicked, current state:', chatOpen);
-            toggleChat(!chatOpen);
-          }}
-          onCloseArtifact={() => {
-            setArtifactPanelOpen(false);
-            setSelectedArtifact(null);
-          }}
-        />
-          
-          {/* Content Area */}
-          <div className="flex-1 p-4 overflow-y-auto">
-            <div className="h-full flex items-center justify-center">
-              <p className="text-neutral-400 text-sm">Artifact content goes here</p>
-            </div>
-          </div>
-        </motion.div>
-          )}
+            {/* Sources Content */}
+            <SourcesDrawer 
+              isOpen={true} 
+              onClose={() => setSourcesDrawerOpen(false)}
+              variant="panel"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Sources Drawer - Sheet variant when artifact panel is open and below 2xl */}
+      <AnimatePresence>
+        {(artifactPanelOpen || draftArtifactPanelOpen || reviewArtifactPanelOpen) && !isAbove2xl && (
+          <SourcesDrawer 
+            isOpen={sourcesDrawerOpen} 
+            onClose={() => setSourcesDrawerOpen(false)}
+            variant="sheet"
+          />
+        )}
       </AnimatePresence>
       
       {/* Share Dialogs */}
@@ -851,6 +1078,10 @@ export default function AssistantChatPage({
         isOpen={exportReviewDialogOpen} 
         onClose={() => setExportReviewDialogOpen(false)} 
         artifactTitle={selectedArtifact?.title || "Review"}
+      />
+      <FileManagementDialog 
+        isOpen={isFileManagementOpen} 
+        onClose={() => setIsFileManagementOpen(false)} 
       />
         </div>
       </SidebarInset>

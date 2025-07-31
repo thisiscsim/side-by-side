@@ -3,7 +3,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -37,7 +36,7 @@ interface User {
 export default function ShareThreadDialog({ isOpen, onClose }: ShareThreadDialogProps) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
-  const [shareMode, setShareMode] = useState("invited");
+  // const [shareMode, setShareMode] = useState("invited"); // Currently unused
   const [currentView, setCurrentView] = useState<ViewType>("main");
   
   // Mock users data

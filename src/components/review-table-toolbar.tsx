@@ -1,9 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ListFilter, Cog } from "lucide-react";
+import { ListFilter, Cog } from "lucide-react";
 import { SmallButton } from "@/components/ui/button";
 import { useState } from "react";
-import { AnimatedBackground } from "../../components/motion-primitives/animated-background";
 import {
   Tooltip,
   TooltipContent,
@@ -71,160 +70,166 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
           <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
           
           {/* Alignment Options */}
-          <AnimatedBackground
-            defaultValue="top"
-            onValueChange={(value: string | null) => setAlignment(value as 'top' | 'center' | 'bottom')}
-            className="bg-neutral-100 rounded-md"
-            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-          >
-            <div data-id="top" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src={alignment === 'top' ? '/top-align-filled.svg' : '/top-align-outline.svg'} 
-                      alt="Top align" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Top align</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setAlignment('top')}
+                  className={`p-2 rounded-md transition-colors ${
+                    alignment === 'top' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src={alignment === 'top' ? '/top-align-filled.svg' : '/top-align-outline.svg'} 
+                    alt="Top align" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Top align</p>
+              </TooltipContent>
+            </Tooltip>
             
-            <div data-id="center" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src={alignment === 'center' ? '/center-align-filled.svg' : '/center-align-outline.svg'} 
-                      alt="Center align" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Center align</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setAlignment('center')}
+                  className={`p-2 rounded-md transition-colors ${
+                    alignment === 'center' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src={alignment === 'center' ? '/center-align-filled.svg' : '/center-align-outline.svg'} 
+                    alt="Center align" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Center align</p>
+              </TooltipContent>
+            </Tooltip>
             
-            <div data-id="bottom" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src={alignment === 'bottom' ? '/bottom-align-filled.svg' : '/bottom-align-outline.svg'} 
-                      alt="Bottom align" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Bottom align</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </AnimatedBackground>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setAlignment('bottom')}
+                  className={`p-2 rounded-md transition-colors ${
+                    alignment === 'bottom' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src={alignment === 'bottom' ? '/bottom-align-filled.svg' : '/bottom-align-outline.svg'} 
+                    alt="Bottom align" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Bottom align</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           
           {/* Separator */}
           <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
           
           {/* Text Display Options */}
-          <AnimatedBackground
-            defaultValue="overflow"
-            onValueChange={(value: string | null) => setTextDisplay(value as 'overflow' | 'wrapping')}
-            className="bg-neutral-100 rounded-md"
-            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-          >
-            <div data-id="overflow" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src="/overflow.svg" 
-                      alt="Text overflow" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Text overflow</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setTextDisplay('overflow')}
+                  className={`p-2 rounded-md transition-colors ${
+                    textDisplay === 'overflow' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src="/overflow.svg" 
+                    alt="Text overflow" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Text overflow</p>
+              </TooltipContent>
+            </Tooltip>
             
-            <div data-id="wrapping" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src="/wrapping.svg" 
-                      alt="Text wrapping" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Text wrapping</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </AnimatedBackground>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setTextDisplay('wrapping')}
+                  className={`p-2 rounded-md transition-colors ${
+                    textDisplay === 'wrapping' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src="/wrapping.svg" 
+                    alt="Text wrapping" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Text wrapping</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           
           {/* Separator */}
           <div className="w-px bg-neutral-200" style={{ height: '20px' }}></div>
           
           {/* Text Length Options */}
-          <AnimatedBackground
-            defaultValue="concise"
-            onValueChange={(value: string | null) => setTextLength(value as 'concise' | 'extend')}
-            className="bg-neutral-100 rounded-md"
-            transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-          >
-            <div data-id="concise" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src="/concise.svg" 
-                      alt="Concise" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Concise</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setTextLength('concise')}
+                  className={`p-2 rounded-md transition-colors ${
+                    textLength === 'concise' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src="/concise.svg" 
+                    alt="Concise" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Concise</p>
+              </TooltipContent>
+            </Tooltip>
             
-            <div data-id="extend" className="relative inline-flex">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 rounded-md text-neutral-600">
-                    <img 
-                      src="/extend.svg" 
-                      alt="Extend" 
-                      width={16} 
-                      height={16} 
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Extend</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </AnimatedBackground>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={() => setTextLength('extend')}
+                  className={`p-2 rounded-md transition-colors ${
+                    textLength === 'extend' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <img 
+                    src="/extend.svg" 
+                    alt="Extend" 
+                    width={16} 
+                    height={16} 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Extend</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">

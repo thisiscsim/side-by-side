@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MoreHorizontal, Upload, Plus } from "lucide-react";
+import { Search, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { AnimatedBackground } from "../../../components/motion-primitives/animated-background";
 
@@ -81,7 +81,7 @@ export default function VaultPage() {
       try {
         const regex = new RegExp(searchQuery, 'i'); // Case-insensitive regex
         searchMatch = regex.test(project.name);
-      } catch (error) {
+      } catch {
         // If regex is invalid, fall back to simple string matching
         searchMatch = project.name.toLowerCase().includes(searchQuery.toLowerCase());
       }

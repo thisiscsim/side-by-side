@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Table2, FileText } from 'lucide-react';
 
 interface ReviewTableArtifactCardProps {
   title: string;
@@ -8,6 +9,7 @@ interface ReviewTableArtifactCardProps {
   isSelected?: boolean;
   className?: string;
   onClick?: () => void;
+  iconType?: 'table' | 'file';
 }
 
 export function ReviewTableArtifactCard({
@@ -17,6 +19,7 @@ export function ReviewTableArtifactCard({
   isSelected = false,
   className,
   onClick,
+  iconType = 'table',
 }: ReviewTableArtifactCardProps) {
   const isSmall = variant === 'small';
 
@@ -45,14 +48,14 @@ export function ReviewTableArtifactCard({
           </p>
         </div>
         
-        {/* Table Icon - only show for large variant */}
+        {/* Icon - only show for large variant */}
         {!isSmall && (
           <div className="bg-neutral-200 rounded-md p-1 flex items-center justify-center w-8 h-8">
-            <img 
-              src="/table-filled.svg" 
-              alt="Table" 
-              className="w-4 h-4"
-            />
+            {iconType === 'file' ? (
+              <FileText className="w-4 h-4 text-neutral-600" />
+            ) : (
+              <Table2 className="w-4 h-4 text-neutral-600" />
+            )}
           </div>
         )}
       </div>
