@@ -3,7 +3,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -34,7 +33,7 @@ interface User {
 export default function ShareArtifactDialog({ isOpen, onClose, artifactTitle }: ShareArtifactDialogProps) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
-  const [shareMode, setShareMode] = useState("invited");
+  // const [shareMode, setShareMode] = useState("invited"); // Currently unused
   
   // Mock users data
   const [users, setUsers] = useState<User[]>([

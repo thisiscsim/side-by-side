@@ -13,7 +13,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 
@@ -220,10 +219,19 @@ export default function SourcesDrawer({
   if (variant === "sheet") {
     return (
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent side="right" className="w-[400px] sm:w-[400px] p-0 flex flex-col">
-          <SheetHeader className="px-3 py-4 border-b border-neutral-200" style={{ height: '52px' }}>
-            <SheetTitle className="text-neutral-900 font-medium">Sources</SheetTitle>
-          </SheetHeader>
+        <SheetContent side="right" className="w-[400px] sm:w-[400px] p-0 flex flex-col" showOverlay={false} forceMount>
+          {/* Hidden title for accessibility */}
+          <SheetTitle className="sr-only">Sources</SheetTitle>
+          {/* Header - Matching panel variant */}
+          <div className="px-3 py-4 border-b border-neutral-200 flex items-center justify-between" style={{ height: '52px' }}>
+            <p className="text-neutral-900 font-medium truncate mr-4">Sources</p>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-neutral-100 rounded-md transition-colors"
+            >
+              <X size={16} className="text-neutral-600" />
+            </button>
+          </div>
           
           {/* Content with custom scrollbar */}
           <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent">
