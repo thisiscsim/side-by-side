@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { detectArtifactType } from "@/lib/artifact-detection";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -167,18 +168,19 @@ export default function AssistantChatPage({
       setMessages([{ role: 'user', content: initialMessage, type: 'text' }]);
       setIsLoading(true);
       
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(initialMessage);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
+      
       // Auto-expand sources drawer on first message (including after refresh)
-      if (!hasOpenedSourcesDrawerRef.current) {
+      // BUT only if it's not a review artifact
+      if (!hasOpenedSourcesDrawerRef.current && !isReviewArtifact) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
           hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
-      
-      // Determine artifact type based on initial message keywords
-      const messageText = initialMessage.toLowerCase();
-      const isDraftArtifact = messageText.includes('draft') || messageText.includes('document');
-      const isReviewArtifact = messageText.includes('review') || messageText.includes('table');
       
       // Simulate AI response
       setTimeout(() => {
@@ -407,7 +409,6 @@ export default function AssistantChatPage({
 
   const sendMessage = () => {
     if (inputValue.trim() && !isLoading) {
-      const userMessage = inputValue.toLowerCase();
       setMessages([...messages, { role: 'user', content: inputValue, type: 'text' }]);
       setInputValue('');
       setIsLoading(true);
@@ -419,17 +420,19 @@ export default function AssistantChatPage({
         textarea.style.height = '60px'; // Reset to minHeight
       }
       
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(inputValue);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
+      
       // Open sources drawer only on the first message if not already opened
-      if (!sourcesDrawerOpen && !hasOpenedSourcesDrawerRef.current) {
+      // BUT only if it's not a review artifact
+      if (!sourcesDrawerOpen && !hasOpenedSourcesDrawerRef.current && !isReviewArtifact) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
           hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
-      
-      // Determine artifact type based on keywords
-      const isDraftArtifact = userMessage.includes('draft') || userMessage.includes('document');
-      const isReviewArtifact = userMessage.includes('review') || userMessage.includes('table');
       
       // Simulate AI response with artifact (you can replace this with actual AI integration)
       setTimeout(() => {
@@ -700,7 +703,8 @@ export default function AssistantChatPage({
                               (currentArtifactType === 'review' && message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
                             )}
                             iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
-                                                        onClick={() => {
+                            showSources={message.artifactData?.variant === 'draft'}
+                            onClick={() => {
                             // Immediately update the artifact content
                             const artifactType = message.artifactData?.variant === 'draft' ? 'draft' : 'review';
                             const artifactData = {
@@ -789,11 +793,11 @@ export default function AssistantChatPage({
                           <>
                             <p className="text-xs font-medium text-neutral-600 mt-4 pl-2">Sources</p>
                             <button 
-                              className="flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1.5"
+                              className="flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1.5 max-w-full"
                               onClick={() => setSourcesDrawerOpen(true)}
                             >
                             {/* Facepile avatars */}
-                            <div className="flex -space-x-1.5">
+                            <div className="flex -space-x-1.5 flex-shrink-0">
                               <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border-[1px] border-white overflow-hidden z-[3]">
                                 <Image src="/lexis.svg" alt="LexisNexis" width={20} height={20} className="w-full h-full object-cover" />
                               </div>
@@ -804,7 +808,7 @@ export default function AssistantChatPage({
                                 <Image src="/bloomberg.jpg" alt="Bloomberg" width={20} height={20} className="w-full h-full object-cover" />
                               </div>
                             </div>
-                            <span>6 sources from LexisNexis, EDGAR, and more</span>
+                            <span className="truncate">6 sources from LexisNexis, EDGAR, and more</span>
                           </button>
                           </>
                         )}
