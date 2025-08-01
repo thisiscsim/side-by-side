@@ -10,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import { AnimatedBackground } from "../../../components/motion-primitives/animated-background";
 import FileManagementDialog from "@/components/file-management-dialog"
+import Image from "next/image";
 
 export default function AssistantHomePage() {
   const router = useRouter();
@@ -124,9 +125,11 @@ export default function AssistantHomePage() {
               <div className="mx-auto" style={{ maxWidth: '832px' }}>
                 {/* Harvey Logo/Title */}
                 <div className="text-center mb-8">
-                  <img 
+                  <Image 
                     src="/Harvey_Logo.svg" 
                     alt="Harvey" 
+                    width={100}
+                    height={32}
                     className="mx-auto"
                     style={{ height: '32px' }}
                   />
@@ -253,7 +256,7 @@ export default function AssistantHomePage() {
                 <div className="flex gap-3 justify-center flex-wrap mx-auto" style={{ maxWidth: '740px' }}>
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/imanage.svg" alt="" style={{ width: '16px', height: '16px' }} />
+                      <Image src="/imanage.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">iManage</span>
                     <Plus size={16} className="text-neutral-600" />
@@ -261,7 +264,7 @@ export default function AssistantHomePage() {
                   
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/lexis.svg" alt="" style={{ width: '16px', height: '16px' }} />
+                      <Image src="/lexis.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">LexisNexis</span>
                     <Plus size={16} className="text-neutral-600" />
@@ -269,7 +272,7 @@ export default function AssistantHomePage() {
                   
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/globe.svg" alt="" style={{ width: '16px', height: '16px' }} />
+                      <Image src="/globe.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">Web search</span>
                     <Plus size={16} className="text-neutral-600" />
@@ -277,7 +280,7 @@ export default function AssistantHomePage() {
                   
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/EDGAR.svg" alt="" style={{ width: '16px', height: '16px' }} />
+                      <Image src="/EDGAR.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">EDGAR</span>
                     <Plus size={16} className="text-neutral-600" />
@@ -285,7 +288,7 @@ export default function AssistantHomePage() {
                   
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/folderIcon.svg" alt="" style={{ width: '16px', height: '16px' }} className="text-neutral-600" />
+                      <Image src="/folderIcon.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} className="text-neutral-600" />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">Amend v Delta IP Litigation</span>
                     <Plus size={16} className="text-neutral-600" />
@@ -293,7 +296,7 @@ export default function AssistantHomePage() {
                   
                   <button className="py-1 pl-1 pr-3 bg-white border border-neutral-200 rounded-md hover:border-neutral-300 transition-colors flex items-center gap-2">
                     <div className="p-1.5 bg-neutral-100 rounded-sm">
-                      <img src="/folderIcon.svg" alt="" style={{ width: '16px', height: '16px' }} className="text-neutral-600" />
+                      <Image src="/folderIcon.svg" alt="" width={16} height={16} style={{ width: '16px', height: '16px' }} className="text-neutral-600" />
                     </div>
                     <span className="text-neutral-900 text-sm font-medium">Regulatory Compliance Audit</span>
                     <Plus size={16} className="text-neutral-600" />
