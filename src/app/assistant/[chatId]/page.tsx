@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, Download, ArrowLeft, X, Plus, ListPlus, Settings2, Wand } from "lucide-react";
+import { UserPlus, Download, ArrowLeft, X, Plus, ListPlus, Settings2, Wand, Copy, SquarePen, RotateCcw, ThumbsUp, ThumbsDown } from "lucide-react";
 import SourcesDrawer from "@/components/sources-drawer";
 import ShareThreadDialog from "@/components/share-thread-dialog";
 import ShareArtifactDialog from "@/components/share-artifact-dialog";
@@ -23,8 +23,8 @@ import { useSearchParams } from "next/navigation";
 import DraftArtifactPanel from "@/components/draft-artifact-panel";
 import ReviewArtifactPanel from "@/components/review-artifact-panel";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Spinner } from "@/components/ui/spinner";
 import FileManagementDialog from "@/components/file-management-dialog";
 
@@ -176,15 +176,16 @@ export default function AssistantChatPage({
       }
       
       // Determine artifact type based on initial message keywords
-          const messageText = initialMessage.toLowerCase();
-    const isDraftArtifact = messageText.includes('draft') || messageText.includes('document');
+      const messageText = initialMessage.toLowerCase();
+      const isDraftArtifact = messageText.includes('draft') || messageText.includes('document');
+      const isReviewArtifact = messageText.includes('review') || messageText.includes('table');
       
       // Simulate AI response
       setTimeout(() => {
         if (isDraftArtifact) {
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'Here is a draft document based on your request',
+            content: 'I have drafted a memo for you. Please let me know if you would like to continue editing the draft or if you need any specific changes or additional information included.',
             type: 'artifact',
             artifactData: {
               title: 'Record of Deliberation',
@@ -192,17 +193,23 @@ export default function AssistantChatPage({
               variant: 'draft'
             }
           }]);
-        } else {
-          // Default to review artifact for initial message
+        } else if (isReviewArtifact) {
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'Here is a review table extracting terms from the industrial merger agreements as requested',
+            content: 'I have generated a review table extracting terms from the industrial merger agreements as requested. Please let me know if you would like to continue editing the table or if you need any specific changes.',
             type: 'artifact',
             artifactData: {
               title: 'Extraction of Agreements and Provisions',
               subtitle: '24 columns · 104 rows',
               variant: 'review'
             }
+          }]);
+        } else {
+          // Default to legal analysis for general messages
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: 'legal-analysis',
+            type: 'text'
           }]);
         }
         setIsLoading(false);
@@ -430,8 +437,8 @@ export default function AssistantChatPage({
           setMessages(prev => [...prev, { 
             role: 'assistant', 
             content: isDraftArtifact 
-              ? 'Here is a draft document based on your request'
-              : 'Here is a review table extracting terms from the industrial merger agreements as requested',
+              ? 'I have drafted a memo for you. Please let me know if you would like to continue editing the draft or if you need any specific changes or additional information included.'
+              : 'I have generated a review table extracting terms from the industrial merger agreements as requested. Please let me know if you would like to continue editing the table or if you need any specific changes.',
             type: 'artifact',
             artifactData: {
               title: isDraftArtifact 
@@ -447,7 +454,7 @@ export default function AssistantChatPage({
           // Regular text response if no keywords match
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'I can help you with that. Please specify if you need a "draft" document or a "review" table.',
+            content: 'legal-analysis',
             type: 'text'
           }]);
         }
@@ -618,24 +625,6 @@ export default function AssistantChatPage({
                   <Download size={16} />
                   <span>Export</span>
                 </Button>
-                <Button 
-                  variant="secondary"
-                  onClick={() => setSourcesDrawerOpen(!sourcesDrawerOpen)}
-                  className={cn("gap-2", sourcesDrawerOpen && "bg-neutral-100")}
-                  style={{ height: '32px' }}
-                >
-                  {sourcesDrawerOpen ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" clipRule="evenodd" d="M7 2C5.34315 2 4 3.34315 4 5V19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7ZM6 19C6 19.5523 6.44772 20 7 20H18V18H7C6.44772 18 6 18.4477 6 19Z" fill="currentColor"/>
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7C5.34315 2 4 3.34315 4 5V19Z" />
-                      <path d="M20 17H7C5.89543 17 5 17.8954 5 19" />
-                    </svg>
-                  )}
-                  <span>Sources</span>
-                </Button>
               </div>
             ) : (
               // When artifact panel is expanded, show dropdown menu
@@ -658,22 +647,6 @@ export default function AssistantChatPage({
                     <Download size={16} className="mr-2" />
                     <span>Export</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setSourcesDrawerOpen(!sourcesDrawerOpen)}
-                    className={sourcesDrawerOpen ? "bg-neutral-100" : ""}
-                  >
-                    {sourcesDrawerOpen ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-                        <path fillRule="evenodd" clipRule="evenodd" d="M7 2C5.34315 2 4 3.34315 4 5V19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7ZM6 19C6 19.5523 6.44772 20 7 20H18V18H7C6.44772 18 6 18.4477 6 19Z" fill="currentColor"/>
-                      </svg>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                        <path d="M4 19C4 20.6569 5.34315 22 7 22H19C19.5523 22 20 21.5523 20 21V3C20 2.44772 19.5523 2 19 2H7C5.34315 2 4 3.34315 4 5V19Z" />
-                        <path d="M20 17H7C5.89543 17 5 17.8954 5 19" />
-                      </svg>
-                    )}
-                    <span>Sources</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -681,23 +654,23 @@ export default function AssistantChatPage({
           
           {/* Messages Area */}
           <motion.div 
-            className="flex-1 overflow-y-auto overflow-x-hidden p-4"
+            className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-8 pb-4"
             initial={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { opacity: 0 } : {}}
             animate={{ opacity: 1 }}
             transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.4, duration: 0.6 } : {}}
           >
-            <div className="space-y-6 mx-auto" style={{ maxWidth: '740px' }}>
+            <div className="mx-auto" style={{ maxWidth: '740px' }}>
             {messages.length === 0 ? (
               <div className="text-center text-neutral-500 mt-8">
                 <p>Start a conversation with Harvey</p>
               </div>
             ) : (
               messages.map((message, index) => (
-                <div key={index} className="flex items-start space-x-3">
+                <div key={index} className={`flex items-start space-x-1 ${index !== messages.length - 1 ? 'mb-6' : ''}`}>
                   {/* Avatar/Icon */}
                   <div className="flex-shrink-0">
                     {message.role === 'user' ? (
-                      <div className="w-6 h-6 bg-neutral-200 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-white border border-neutral-200 rounded-full flex items-center justify-center">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-600">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                           <circle cx="12" cy="7" r="4"/>
@@ -705,7 +678,7 @@ export default function AssistantChatPage({
                       </div>
                     ) : (
                       <div className="w-6 h-6 flex items-center justify-center">
-                        <img src="/harvey-avatar.svg" alt="Harvey" className="w-6 h-6" />
+                        <Image src="/harvey-avatar.svg" alt="Harvey" width={24} height={24} className="w-6 h-6" />
                       </div>
                     )}
                   </div>
@@ -714,19 +687,20 @@ export default function AssistantChatPage({
                   <div className="flex-1 min-w-0">
                     {message.type === 'artifact' ? (
                       <div className="space-y-3">
-                        <div className="text-neutral-900 leading-relaxed">
+                        <div className="text-neutral-900 leading-relaxed pl-2">
                           {message.content}
                         </div>
-                                                <ReviewTableArtifactCard
-                          title={message.artifactData?.title || 'Artifact'}
-                          subtitle={message.artifactData?.subtitle || ''}
-                          variant={anyArtifactPanelOpen ? 'small' : 'large'}
-                          isSelected={unifiedArtifactPanelOpen && (
-                            (currentArtifactType === 'draft' && message.artifactData?.variant === 'draft' && selectedDraftArtifact?.title === message.artifactData?.title) ||
-                            (currentArtifactType === 'review' && message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
-                          )}
-                          iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
-                                                      onClick={() => {
+                        <div className="pl-2">
+                          <ReviewTableArtifactCard
+                            title={message.artifactData?.title || 'Artifact'}
+                            subtitle={message.artifactData?.subtitle || ''}
+                            variant={anyArtifactPanelOpen ? 'small' : 'large'}
+                            isSelected={unifiedArtifactPanelOpen && (
+                              (currentArtifactType === 'draft' && message.artifactData?.variant === 'draft' && selectedDraftArtifact?.title === message.artifactData?.title) ||
+                              (currentArtifactType === 'review' && message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
+                            )}
+                            iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
+                                                        onClick={() => {
                             // Immediately update the artifact content
                             const artifactType = message.artifactData?.variant === 'draft' ? 'draft' : 'review';
                             const artifactData = {
@@ -749,11 +723,135 @@ export default function AssistantChatPage({
                               setDraftArtifactPanelOpen(false);
                             }
                           }}
-                        />
+                          />
+                        </div>
+                        {/* Ghost buttons for AI messages with artifacts */}
+                        {message.role !== 'user' && (
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center">
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <Copy className="w-3 h-3" />
+                                Copy
+                              </button>
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <Download className="w-3 h-3" />
+                                Export
+                              </button>
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <RotateCcw className="w-3 h-3" />
+                                Rewrite
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button className="text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm p-1.5">
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                              <button className="text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm p-1.5">
+                                <ThumbsDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="text-neutral-900 leading-relaxed">
-                        {message.content}
+                      <div>
+                        <div className="text-neutral-900 leading-relaxed pl-2">
+                          {message.content === 'legal-analysis' ? (
+                            <div className="space-y-4">
+                              <p>The entitlement of a commercial tenant to self-help rights depends on the jurisdiction and the specific circumstances of the case. Below is an analysis based on federal principles, state laws, and relevant case law:</p>
+                              
+                              <h3 className="text-base font-semibold">Federal and General Principles</h3>
+                              <p>Under federal law and general principles, there is no inherent right for a commercial tenant to engage in self-help. Instead, the remedies available to tenants are typically governed by statutory frameworks or common law principles, which vary by jurisdiction. For example, in the District of Columbia, the common law right of self-help for landlords has been abrogated, and statutory remedies are deemed exclusive. This principle applies equally to commercial tenancies, as established in Mendes v. Johnson, 389 A.2d 781 (D.C. 1978), where the court held that a tenant has the right not to have their possession interfered with except by lawful process.</p>
+                              
+                              <h3 className="text-base font-semibold">Jurisdictional Analysis</h3>
+                              
+                              <h4 className="text-sm font-semibold mt-2">New York</h4>
+                              <p>In New York, the focus is primarily on the landlord&apos;s right to self-help rather than the tenant&apos;s. Case law such as Sol De Ibiza, LLC v. Panjo Realty, Inc., 911 N.Y.S.2d 567 (App. Term 2010) and Martinez v. Ulloa, 22 N.Y.S.3d 787 (N.Y. App. Term. 2015) confirms that landlords may utilize self-help to regain possession of commercial premises under specific conditions, including a lease provision reserving the right, a valid rent demand, and peaceable reentry. However, there is no indication in these cases that commercial tenants have a reciprocal right to self-help. Instead, tenants typically seek judicial remedies, such as restoration of possession or damages for wrongful eviction under RPAPL § 853.</p>
+                              
+                              <h4 className="text-sm font-semibold mt-2">District of Columbia</h4>
+                              <p>In the District of Columbia, the courts have explicitly rejected the use of self-help by landlords and tenants alike. In Mendes v. Johnson and Sarete, Inc. v. 1344 U St. Ltd. P&apos;ship, 871 A.2d 480 (D.C. 2005), the courts held that statutory remedies for reacquiring possession are exclusive, and any interference with possession outside of lawful process constitutes wrongful eviction. This prohibition applies to both residential and commercial tenancies.</p>
+                              
+                              <h4 className="text-sm font-semibold mt-2">Rhode Island</h4>
+                              <p>Rhode Island law explicitly prohibits the use of self-help by landlords to reenter and repossess leased premises, whether under common law or contractual agreements. While the statute, R.I. Gen. Laws § 34-18.1-15, does not directly address tenants, the prohibition on self-help for landlords suggests a strong preference for judicial processes to resolve possession disputes.</p>
+                              
+                              <h4 className="text-sm font-semibold mt-2">Virginia</h4>
+                              <p>Virginia law permits self-help eviction by landlords in commercial tenancies, provided it does not incite a breach of the peace, as outlined in Va. Code Ann. § 55.1-1400. However, the statute does not extend this right to tenants, and tenants are generally expected to rely on judicial remedies to address disputes.</p>
+                              
+                              <h3 className="text-base font-semibold">Conclusion</h3>
+                              <p>In most jurisdictions, commercial tenants are not entitled to self-help rights. Instead, they are expected to seek judicial remedies to address disputes with landlords. Jurisdictions like the District of Columbia and Rhode Island explicitly prohibit self-help, while others, such as New York and Virginia, focus on the landlord&apos;s rights without extending similar rights to tenants. Tenants should carefully review their lease agreements and applicable state laws to determine their rights and remedies in possession disputes.</p>
+                            </div>
+                          ) : (
+                            message.content
+                          )}
+                        </div>
+                        {/* Sources section for legal analysis */}
+                        {message.content === 'legal-analysis' && message.role !== 'user' && (
+                          <>
+                            <p className="text-xs font-medium text-neutral-600 mt-4 pl-2">Sources</p>
+                            <button 
+                              className="flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1.5"
+                              onClick={() => setSourcesDrawerOpen(true)}
+                            >
+                            {/* Facepile avatars */}
+                            <div className="flex -space-x-1.5">
+                              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border-[1px] border-white overflow-hidden z-[3]">
+                                <Image src="/lexis.svg" alt="LexisNexis" width={20} height={20} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border-[1.5px] border-white overflow-hidden z-[2]">
+                                <Image src="/EDGAR.svg" alt="EDGAR" width={20} height={20} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border-[1.5px] border-white overflow-hidden z-[1]">
+                                <Image src="/bloomberg.jpg" alt="Bloomberg" width={20} height={20} className="w-full h-full object-cover" />
+                              </div>
+                            </div>
+                            <span>6 sources from LexisNexis, EDGAR, and more</span>
+                          </button>
+                          </>
+                        )}
+                        {/* Ghost buttons for user messages */}
+                        {message.role === 'user' && (
+                          <div className="flex items-center mt-2">
+                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                              <Copy className="w-3 h-3" />
+                              Copy
+                            </button>
+                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                              <ListPlus className="w-3 h-3" />
+                              Save prompt
+                            </button>
+                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                              <SquarePen className="w-3 h-3" />
+                              Edit query
+                            </button>
+                          </div>
+                        )}
+                        {/* Ghost buttons for AI responses */}
+                        {message.role !== 'user' && (
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center">
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <Copy className="w-3 h-3" />
+                                Copy
+                              </button>
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <Download className="w-3 h-3" />
+                                Export
+                              </button>
+                              <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                                <RotateCcw className="w-3 h-3" />
+                                Rewrite
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button className="text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm p-1.5">
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                              <button className="text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm p-1.5">
+                                <ThumbsDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -765,7 +863,7 @@ export default function AssistantChatPage({
           
           {/* Input Area - Animation simulating movement from center to bottom */}
           <motion.div 
-            className="p-6 overflow-x-hidden"
+            className="px-6 pb-6 overflow-x-hidden"
             initial={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { y: "calc(-45vh + 120px)" } : {}}
             animate={{ y: 0 }}
             transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { 
