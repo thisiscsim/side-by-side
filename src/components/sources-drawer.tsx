@@ -15,19 +15,22 @@ import {
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SourcesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   showOverlay?: boolean;
   variant?: "embedded" | "sheet" | "panel";
+  isLoading?: boolean;
 }
 
 export default function SourcesDrawer({ 
   isOpen, 
   onClose, 
   showOverlay = false,
-  variant = "embedded" 
+  variant = "embedded",
+  isLoading = false 
 }: SourcesDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("All");
@@ -76,6 +79,95 @@ export default function SourcesDrawer({
       references: [4, 5, 6]
     }
   ];
+
+  // Skeleton loader content
+  const skeletonContent = (
+    <>
+      <style jsx>{`
+        .scrollbar-thin {
+          scrollbar-width: thin;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: transparent;
+          border-radius: 4px;
+          transition: background 0.2s ease;
+        }
+        .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+          background: rgba(163, 163, 163, 0.5);
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: rgba(163, 163, 163, 0.7);
+        }
+      `}</style>
+      
+      {/* Search and Filter Section - Keep active even in loading state */}
+      <div className="px-2 pb-2">
+        <div className="flex gap-2">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Input
+              type="text"
+              placeholder="Search sources"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm text-neutral-900 h-8 shadow-none"
+              disabled={true}
+            />
+          </div>
+          
+          {/* Filter Dropdown */}
+          <button 
+            disabled
+            className="flex items-center gap-1 px-3 h-8 bg-white border border-neutral-200 rounded-md opacity-50 cursor-not-allowed"
+          >
+            <span className="text-sm text-neutral-900">All</span>
+            <ChevronDown className="h-4 w-4 text-neutral-400" />
+          </button>
+        </div>
+      </div>
+      
+      {/* Skeleton Sources List */}
+      <div className="space-y-3 px-2 mt-2">
+        {[1, 2, 3, 4, 5, 6].map((_, index) => (
+          <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
+            <div className="flex items-start space-x-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Skeleton width={16} height={16} className="rounded" />
+                  <Skeleton width={96} height={12} />
+                  <Skeleton width={4} height={4} className="rounded-full" />
+                  <Skeleton width={128} height={12} />
+                </div>
+                <div className="space-y-1.5 mb-3">
+                  <Skeleton width="100%" height={12} />
+                  <Skeleton width="100%" height={12} />
+                  <Skeleton width="75%" height={12} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Skeleton width={14} height={14} className="rounded" />
+                  <Skeleton width={14} height={14} className="rounded" />
+                  <Skeleton width={14} height={14} className="rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* See all link skeleton */}
+      <div className="mt-6 pt-4 border-t border-neutral-100 px-2">
+        <Skeleton width={64} height={16} />
+      </div>
+    </>
+  );
 
   const sourcesContent = (
     <>
@@ -209,7 +301,7 @@ export default function SourcesDrawer({
     return (
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent" style={{ width: '400px' }}>
-          {sourcesContent}
+          {isLoading ? skeletonContent : sourcesContent}
         </div>
       </div>
     );
@@ -235,7 +327,7 @@ export default function SourcesDrawer({
           
           {/* Content with custom scrollbar */}
           <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent">
-            {sourcesContent}
+            {isLoading ? skeletonContent : sourcesContent}
           </div>
         </SheetContent>
       </Sheet>
@@ -286,7 +378,15 @@ export default function SourcesDrawer({
             
             {/* Content with custom scrollbar */}
             <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-transparent hover:scrollbar-thumb-neutral-300 scrollbar-track-transparent">
-              {sourcesContent}
+              {isLoading ? (
+                <>
+                  {/* Debug indicator */}
+                  <div className="mb-4 p-2 bg-yellow-100 text-yellow-800 text-xs rounded">
+                    Loading sources...
+                  </div>
+                  {skeletonContent}
+                </>
+              ) : sourcesContent}
             </div>
           </motion.div>
         </>
