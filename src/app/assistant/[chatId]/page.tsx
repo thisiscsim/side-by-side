@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { detectArtifactType } from "@/lib/artifact-detection";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -175,10 +176,10 @@ export default function AssistantChatPage({
         }, 1000); // Open drawer during AI thinking time
       }
       
-      // Determine artifact type based on initial message keywords
-      const messageText = initialMessage.toLowerCase();
-      const isDraftArtifact = messageText.includes('draft') || messageText.includes('document');
-      const isReviewArtifact = messageText.includes('review') || messageText.includes('table');
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(initialMessage);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
       
       // Simulate AI response
       setTimeout(() => {
@@ -407,7 +408,6 @@ export default function AssistantChatPage({
 
   const sendMessage = () => {
     if (inputValue.trim() && !isLoading) {
-      const userMessage = inputValue.toLowerCase();
       setMessages([...messages, { role: 'user', content: inputValue, type: 'text' }]);
       setInputValue('');
       setIsLoading(true);
@@ -427,9 +427,10 @@ export default function AssistantChatPage({
         }, 1000); // Open drawer during AI thinking time
       }
       
-      // Determine artifact type based on keywords
-      const isDraftArtifact = userMessage.includes('draft') || userMessage.includes('document');
-      const isReviewArtifact = userMessage.includes('review') || userMessage.includes('table');
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(inputValue);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
       
       // Simulate AI response with artifact (you can replace this with actual AI integration)
       setTimeout(() => {
