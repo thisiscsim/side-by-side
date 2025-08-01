@@ -18,6 +18,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Skeleton Loading Animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.animate-skeleton-loading {
+  animation: skeleton-loading 6s ease-in-out infinite;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

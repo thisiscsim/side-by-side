@@ -1029,6 +1029,7 @@ export default function AssistantChatPage({
               isOpen={true} 
               onClose={() => setSourcesDrawerOpen(false)}
               variant="panel"
+              isLoading={isLoading}
             />
           </motion.div>
         )}
@@ -1155,6 +1156,7 @@ export default function AssistantChatPage({
               isOpen={true} 
               onClose={() => setSourcesDrawerOpen(false)}
               variant="panel"
+              isLoading={isLoading}
             />
           </motion.div>
         )}
@@ -1167,6 +1169,7 @@ export default function AssistantChatPage({
             isOpen={sourcesDrawerOpen} 
             onClose={() => setSourcesDrawerOpen(false)}
             variant="sheet"
+            isLoading={isLoading}
           />
         )}
       </AnimatePresence>
