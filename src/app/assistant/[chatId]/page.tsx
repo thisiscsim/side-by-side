@@ -168,18 +168,19 @@ export default function AssistantChatPage({
       setMessages([{ role: 'user', content: initialMessage, type: 'text' }]);
       setIsLoading(true);
       
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(initialMessage);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
+      
       // Auto-expand sources drawer on first message (including after refresh)
-      if (!hasOpenedSourcesDrawerRef.current) {
+      // BUT only if it's not a review artifact
+      if (!hasOpenedSourcesDrawerRef.current && !isReviewArtifact) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
           hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
-      
-      // Determine artifact type using weighted keyword scoring
-      const artifactType = detectArtifactType(initialMessage);
-      const isDraftArtifact = artifactType === 'draft';
-      const isReviewArtifact = artifactType === 'review';
       
       // Simulate AI response
       setTimeout(() => {
@@ -419,18 +420,19 @@ export default function AssistantChatPage({
         textarea.style.height = '60px'; // Reset to minHeight
       }
       
+      // Determine artifact type using weighted keyword scoring
+      const artifactType = detectArtifactType(inputValue);
+      const isDraftArtifact = artifactType === 'draft';
+      const isReviewArtifact = artifactType === 'review';
+      
       // Open sources drawer only on the first message if not already opened
-      if (!sourcesDrawerOpen && !hasOpenedSourcesDrawerRef.current) {
+      // BUT only if it's not a review artifact
+      if (!sourcesDrawerOpen && !hasOpenedSourcesDrawerRef.current && !isReviewArtifact) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
           hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
-      
-      // Determine artifact type using weighted keyword scoring
-      const artifactType = detectArtifactType(inputValue);
-      const isDraftArtifact = artifactType === 'draft';
-      const isReviewArtifact = artifactType === 'review';
       
       // Simulate AI response with artifact (you can replace this with actual AI integration)
       setTimeout(() => {
@@ -701,7 +703,8 @@ export default function AssistantChatPage({
                               (currentArtifactType === 'review' && message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
                             )}
                             iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
-                                                        onClick={() => {
+                            showSources={message.artifactData?.variant === 'draft'}
+                            onClick={() => {
                             // Immediately update the artifact content
                             const artifactType = message.artifactData?.variant === 'draft' ? 'draft' : 'review';
                             const artifactData = {
