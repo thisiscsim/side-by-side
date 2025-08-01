@@ -370,7 +370,7 @@ export default function AssistantHomePage() {
                           className="p-4 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors text-left"
                         >
                           <h3 className="text-sm font-medium text-neutral-900 mb-1">{workflow.title}</h3>
-                          <p className="text-xs text-neutral-500 mb-6">{workflow.description}</p>
+                          <p className="text-xs text-neutral-500 mb-8">{workflow.description}</p>
                           <div className="flex items-center gap-1 text-neutral-500">
                             <IconComponent size={12} />
                             <span className="text-xs">{workflow.type}</span>

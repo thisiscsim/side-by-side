@@ -103,6 +103,10 @@ export default function AssistantChatPage({
   const [selectedArtifact, setSelectedArtifact] = useState<{ title: string; subtitle: string } | null>(null);
   const [selectedDraftArtifact, setSelectedDraftArtifact] = useState<{ title: string; subtitle: string } | null>(null);
   const [selectedReviewArtifact, setSelectedReviewArtifact] = useState<{ title: string; subtitle: string } | null>(null);
+  
+  // New unified artifact panel state
+  const [unifiedArtifactPanelOpen, setUnifiedArtifactPanelOpen] = useState(false);
+  const [currentArtifactType, setCurrentArtifactType] = useState<'draft' | 'review' | null>(null);
   const [isFileManagementOpen, setIsFileManagementOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasProcessedInitialMessageRef = useRef(false);
@@ -114,7 +118,7 @@ export default function AssistantChatPage({
   const hasAutoCollapsedSidebarRef = useRef(false);
   
   // Check if any artifact panel is open
-  const anyArtifactPanelOpen = artifactPanelOpen || draftArtifactPanelOpen || reviewArtifactPanelOpen;
+  const anyArtifactPanelOpen = artifactPanelOpen || draftArtifactPanelOpen || reviewArtifactPanelOpen || unifiedArtifactPanelOpen;
   
   // Check if we're coming from the assistant homepage
   const [isFromHomepage] = useState(() => {
@@ -130,6 +134,9 @@ export default function AssistantChatPage({
 
   // Track if animations have already been played to prevent replaying on chat panel toggle
   const hasPlayedAnimationsRef = useRef(false);
+
+  // Track if source drawer has been opened once during the session
+  const hasOpenedSourcesDrawerRef = useRef(false);
 
   // Add states for editing titles
   const [isEditingChatTitle, setIsEditingChatTitle] = useState(false);
@@ -160,10 +167,11 @@ export default function AssistantChatPage({
       setMessages([{ role: 'user', content: initialMessage, type: 'text' }]);
       setIsLoading(true);
       
-      // Auto-expand sources drawer for first-time users from homepage when loading starts
-      if (isFromHomepage) {
+      // Auto-expand sources drawer on first message (including after refresh)
+      if (!hasOpenedSourcesDrawerRef.current) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
+          hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
       
@@ -404,10 +412,11 @@ export default function AssistantChatPage({
         textarea.style.height = '60px'; // Reset to minHeight
       }
       
-      // Open sources drawer when AI starts loading (for subsequent messages)
-      if (!sourcesDrawerOpen) {
+      // Open sources drawer only on the first message if not already opened
+      if (!sourcesDrawerOpen && !hasOpenedSourcesDrawerRef.current) {
         setTimeout(() => {
           setSourcesDrawerOpen(true);
+          hasOpenedSourcesDrawerRef.current = true;
         }, 1000); // Open drawer during AI thinking time
       }
       
@@ -712,26 +721,32 @@ export default function AssistantChatPage({
                           title={message.artifactData?.title || 'Artifact'}
                           subtitle={message.artifactData?.subtitle || ''}
                           variant={anyArtifactPanelOpen ? 'small' : 'large'}
-                          isSelected={anyArtifactPanelOpen && (
-                            (message.artifactData?.variant === 'draft' && selectedDraftArtifact?.title === message.artifactData?.title) ||
-                            (message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
+                          isSelected={unifiedArtifactPanelOpen && (
+                            (currentArtifactType === 'draft' && message.artifactData?.variant === 'draft' && selectedDraftArtifact?.title === message.artifactData?.title) ||
+                            (currentArtifactType === 'review' && message.artifactData?.variant !== 'draft' && selectedReviewArtifact?.title === message.artifactData?.title)
                           )}
                           iconType={message.artifactData?.variant === 'draft' ? 'file' : 'table'}
                                                       onClick={() => {
-                            // Open appropriate panel based on artifact variant
-                            if (message.artifactData?.variant === 'draft') {
-                              setSelectedDraftArtifact({
-                                title: message.artifactData?.title || 'Artifact',
-                                subtitle: message.artifactData?.subtitle || ''
-                              });
+                            // Immediately update the artifact content
+                            const artifactType = message.artifactData?.variant === 'draft' ? 'draft' : 'review';
+                            const artifactData = {
+                              title: message.artifactData?.title || 'Artifact',
+                              subtitle: message.artifactData?.subtitle || ''
+                            };
+                            
+                            // Update unified panel state
+                            setCurrentArtifactType(artifactType);
+                            setUnifiedArtifactPanelOpen(true);
+                            
+                            // Also update the legacy states for backward compatibility
+                            if (artifactType === 'draft') {
+                              setSelectedDraftArtifact(artifactData);
                               setDraftArtifactPanelOpen(true);
+                              setReviewArtifactPanelOpen(false);
                             } else {
-                              // Default to review panel for review variant or no variant
-                              setSelectedReviewArtifact({
-                                title: message.artifactData?.title || 'Artifact',
-                                subtitle: message.artifactData?.subtitle || ''
-                              });
+                              setSelectedReviewArtifact(artifactData);
                               setReviewArtifactPanelOpen(true);
+                              setDraftArtifactPanelOpen(false);
                             }
                           }}
                         />
@@ -921,61 +936,64 @@ export default function AssistantChatPage({
         )}
       </AnimatePresence>
       
-      {/* Draft Artifact Panel - Right Panel */}
+      {/* Unified Artifact Panel - Right Panel */}
       <AnimatePresence>
-        {draftArtifactPanelOpen && (
-          <DraftArtifactPanel
-            selectedArtifact={selectedDraftArtifact}
-            isEditingArtifactTitle={isEditingDraftArtifactTitle}
-            editedArtifactTitle={editedDraftArtifactTitle}
-            onEditedArtifactTitleChange={setEditedDraftArtifactTitle}
-            onStartEditingTitle={() => {
-              setIsEditingDraftArtifactTitle(true);
-              setEditedDraftArtifactTitle(selectedDraftArtifact?.title || 'Artifact');
-            }}
-            onSaveTitle={handleSaveDraftArtifactTitle}
-            onClose={() => {
-              setDraftArtifactPanelOpen(false);
-              setSelectedDraftArtifact(null);
-            }}
-            chatOpen={chatOpen}
-            onToggleChat={toggleChat}
-            shareArtifactDialogOpen={shareArtifactDialogOpen}
-            onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
-            exportReviewDialogOpen={exportReviewDialogOpen}
-            onExportReviewDialogOpenChange={setExportReviewDialogOpen}
-            artifactTitleInputRef={draftArtifactTitleInputRef}
-            sourcesDrawerOpen={sourcesDrawerOpen}
-            onSourcesDrawerOpenChange={setSourcesDrawerOpen}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Review Artifact Panel - Right Panel */}
-      <AnimatePresence>
-        {reviewArtifactPanelOpen && (
-          <ReviewArtifactPanel
-            selectedArtifact={selectedReviewArtifact}
-            isEditingArtifactTitle={isEditingReviewArtifactTitle}
-            editedArtifactTitle={editedReviewArtifactTitle}
-            onEditedArtifactTitleChange={setEditedReviewArtifactTitle}
-            onStartEditingTitle={() => {
-              setIsEditingReviewArtifactTitle(true);
-              setEditedReviewArtifactTitle(selectedReviewArtifact?.title || 'Artifact');
-            }}
-            onSaveTitle={handleSaveReviewArtifactTitle}
-            onClose={() => {
-              setReviewArtifactPanelOpen(false);
-              setSelectedReviewArtifact(null);
-            }}
-            chatOpen={chatOpen}
-            onToggleChat={toggleChat}
-            shareArtifactDialogOpen={shareArtifactDialogOpen}
-            onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
-            exportReviewDialogOpen={exportReviewDialogOpen}
-            onExportReviewDialogOpenChange={setExportReviewDialogOpen}
-            artifactTitleInputRef={reviewArtifactTitleInputRef}
-          />
+        {unifiedArtifactPanelOpen && currentArtifactType && (
+          <>
+            {currentArtifactType === 'draft' ? (
+              <DraftArtifactPanel
+                selectedArtifact={selectedDraftArtifact}
+                isEditingArtifactTitle={isEditingDraftArtifactTitle}
+                editedArtifactTitle={editedDraftArtifactTitle}
+                onEditedArtifactTitleChange={setEditedDraftArtifactTitle}
+                onStartEditingTitle={() => {
+                  setIsEditingDraftArtifactTitle(true);
+                  setEditedDraftArtifactTitle(selectedDraftArtifact?.title || 'Artifact');
+                }}
+                onSaveTitle={handleSaveDraftArtifactTitle}
+                onClose={() => {
+                  setUnifiedArtifactPanelOpen(false);
+                  setDraftArtifactPanelOpen(false);
+                  setSelectedDraftArtifact(null);
+                  setCurrentArtifactType(null);
+                }}
+                chatOpen={chatOpen}
+                onToggleChat={toggleChat}
+                shareArtifactDialogOpen={shareArtifactDialogOpen}
+                onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
+                exportReviewDialogOpen={exportReviewDialogOpen}
+                onExportReviewDialogOpenChange={setExportReviewDialogOpen}
+                artifactTitleInputRef={draftArtifactTitleInputRef}
+                sourcesDrawerOpen={sourcesDrawerOpen}
+                onSourcesDrawerOpenChange={setSourcesDrawerOpen}
+              />
+            ) : (
+              <ReviewArtifactPanel
+                selectedArtifact={selectedReviewArtifact}
+                isEditingArtifactTitle={isEditingReviewArtifactTitle}
+                editedArtifactTitle={editedReviewArtifactTitle}
+                onEditedArtifactTitleChange={setEditedReviewArtifactTitle}
+                onStartEditingTitle={() => {
+                  setIsEditingReviewArtifactTitle(true);
+                  setEditedReviewArtifactTitle(selectedReviewArtifact?.title || 'Artifact');
+                }}
+                onSaveTitle={handleSaveReviewArtifactTitle}
+                onClose={() => {
+                  setUnifiedArtifactPanelOpen(false);
+                  setReviewArtifactPanelOpen(false);
+                  setSelectedReviewArtifact(null);
+                  setCurrentArtifactType(null);
+                }}
+                chatOpen={chatOpen}
+                onToggleChat={toggleChat}
+                shareArtifactDialogOpen={shareArtifactDialogOpen}
+                onShareArtifactDialogOpenChange={setShareArtifactDialogOpen}
+                exportReviewDialogOpen={exportReviewDialogOpen}
+                onExportReviewDialogOpenChange={setExportReviewDialogOpen}
+                artifactTitleInputRef={reviewArtifactTitleInputRef}
+              />
+            )}
+          </>
         )}
       </AnimatePresence>
 
