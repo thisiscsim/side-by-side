@@ -793,11 +793,11 @@ export default function AssistantChatPage({
                           <>
                             <p className="text-xs font-medium text-neutral-600 mt-4 pl-2">Sources</p>
                             <button 
-                              className="flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1.5"
+                              className="flex items-center gap-2 text-sm text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1.5 max-w-full"
                               onClick={() => setSourcesDrawerOpen(true)}
                             >
                             {/* Facepile avatars */}
-                            <div className="flex -space-x-1.5">
+                            <div className="flex -space-x-1.5 flex-shrink-0">
                               <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center border-[1px] border-white overflow-hidden z-[3]">
                                 <Image src="/lexis.svg" alt="LexisNexis" width={20} height={20} className="w-full h-full object-cover" />
                               </div>
@@ -808,7 +808,7 @@ export default function AssistantChatPage({
                                 <Image src="/bloomberg.jpg" alt="Bloomberg" width={20} height={20} className="w-full h-full object-cover" />
                               </div>
                             </div>
-                            <span>6 sources from LexisNexis, EDGAR, and more</span>
+                            <span className="truncate">6 sources from LexisNexis, EDGAR, and more</span>
                           </button>
                           </>
                         )}

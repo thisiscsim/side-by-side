@@ -310,7 +310,7 @@ export default function SourcesDrawer({
   // Sheet variant - opens as a separate panel
   if (variant === "sheet") {
     return (
-      <Sheet open={isOpen} onOpenChange={onClose}>
+      <Sheet open={isOpen} onOpenChange={onClose} modal={false}>
         <SheetContent side="right" className="w-[400px] sm:w-[400px] p-0 flex flex-col" showOverlay={false} forceMount>
           {/* Hidden title for accessibility */}
           <SheetTitle className="sr-only">Sources</SheetTitle>
