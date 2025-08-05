@@ -156,9 +156,25 @@ export default function AssistantChatPage({
   const artifactTitleInputRef = useRef<HTMLInputElement>(null);
   const draftArtifactTitleInputRef = useRef<HTMLInputElement>(null);
   const reviewArtifactTitleInputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showBottomGradient, setShowBottomGradient] = useState(false);
 
   const MIN_CHAT_WIDTH = 400;
   const MAX_CHAT_WIDTH = 800;
+
+  // Scroll to bottom function
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }, []);
+
+
 
   // Process initial message when component mounts
   useEffect(() => {
@@ -239,6 +255,50 @@ export default function AssistantChatPage({
       setEditedReviewArtifactTitle(selectedReviewArtifact.title);
     }
   }, [selectedReviewArtifact]);
+
+  // Handle scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (messagesContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+        // Show top gradient when content has scrolled past the top
+        setIsScrolled(scrollTop > 0);
+        
+        // Check if user is near the bottom (within 100px)
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        setIsNearBottom(distanceFromBottom < 100);
+        
+        // Show bottom gradient when not at the very bottom
+        setShowBottomGradient(distanceFromBottom > 1);
+      }
+    };
+
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      // Initial check
+      handleScroll();
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    // Only auto-scroll if user is near the bottom
+    if (isNearBottom) {
+      // Small delay to ensure DOM is updated
+      const timeoutId = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages, isNearBottom, scrollToBottom]);
 
   // Handle saving chat title
   const handleSaveChatTitle = useCallback(() => {
@@ -419,6 +479,9 @@ export default function AssistantChatPage({
         textarea.style.height = 'auto';
         textarea.style.height = '60px'; // Reset to minHeight
       }
+      
+      // Always scroll to bottom when user sends a message
+      setTimeout(() => scrollToBottom(), 50);
       
       // Determine artifact type using weighted keyword scoring
       const artifactType = detectArtifactType(inputValue);
@@ -655,21 +718,38 @@ export default function AssistantChatPage({
             )}
           </motion.div>
           
-          {/* Messages Area */}
-          <motion.div 
-            className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-8 pb-4"
-            initial={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { opacity: 0 } : {}}
-            animate={{ opacity: 1 }}
-            transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.4, duration: 0.6 } : {}}
-          >
-            <div className="mx-auto" style={{ maxWidth: '740px' }}>
+          {/* Messages Area Container */}
+          <div className="flex-1 relative flex flex-col overflow-hidden">
+            {/* Top Gradient Overlay - positioned outside scrollable area */}
+            <div 
+              className={`absolute top-0 left-0 right-0 pointer-events-none z-10 transition-opacity duration-300 chat-scroll-gradient ${
+                isScrolled ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+            
+            {/* Bottom Gradient Overlay */}
+            <div 
+              className={`absolute bottom-0 left-0 right-0 pointer-events-none z-10 transition-opacity duration-300 chat-scroll-gradient-bottom ${
+                showBottomGradient ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+            
+            {/* Messages Area */}
+            <motion.div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-8 pb-8 hide-scrollbar"
+              initial={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { opacity: 0 } : {}}
+              animate={{ opacity: 1 }}
+              transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.4, duration: 0.6 } : {}}
+            >
+              <div className="mx-auto" style={{ maxWidth: '740px' }}>
             {messages.length === 0 ? (
               <div className="text-center text-neutral-500 mt-8">
                 <p>Start a conversation with Harvey</p>
               </div>
             ) : (
               messages.map((message, index) => (
-                <div key={index} className={`flex items-start space-x-1 ${index !== messages.length - 1 ? 'mb-6' : ''}`}>
+                <div key={index} data-message className={`flex items-start space-x-1 ${index !== messages.length - 1 ? 'mb-6' : ''}`}>
                   {/* Avatar/Icon */}
                   <div className="flex-shrink-0">
                     {message.role === 'user' ? (
@@ -863,11 +943,12 @@ export default function AssistantChatPage({
               ))
             )}
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
           
           {/* Input Area - Animation simulating movement from center to bottom */}
           <motion.div 
-            className="px-6 pb-6 overflow-x-hidden"
+            className="px-6 pb-6 overflow-x-hidden relative z-20 bg-white"
             initial={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { y: "calc(-45vh + 120px)" } : {}}
             animate={{ y: 0 }}
             transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { 
@@ -892,7 +973,12 @@ export default function AssistantChatPage({
                   e.target.style.height = 'auto';
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && (e.preventDefault(), sendMessage())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
                 placeholder="Request a revision or ask a question..."
                 className="w-full bg-transparent focus:outline-none text-neutral-900 placeholder-neutral-500 resize-none overflow-hidden flex-1 px-2"
                 style={{ 

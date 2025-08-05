@@ -230,10 +230,13 @@ export default function AssistantHomePage() {
                     <button
                       onClick={handleSendMessage}
                       disabled={!inputValue.trim() || isLoading}
-                      className={`px-4 py-1.5 focus:outline-none flex items-center justify-center transition-all bg-neutral-900 text-neutral-0 hover:bg-neutral-800 ${
+                      className={`focus:outline-none flex items-center justify-center transition-all bg-neutral-900 text-neutral-0 hover:bg-neutral-800 ${
                         !inputValue.trim() || isLoading ? 'cursor-not-allowed' : ''
+                      } ${
+                        isLoading ? 'p-2' : 'px-4 py-1.5'
                       }`}
                       style={{ 
+                        minWidth: isLoading ? '32px' : undefined,
                         minHeight: '32px',
                         borderRadius: '6px',
                         opacity: !inputValue.trim() || isLoading ? 0.3 : 1,
@@ -242,7 +245,9 @@ export default function AssistantHomePage() {
                       }}
                     >
                       {isLoading ? (
-                        <Spinner size="sm" />
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          <Spinner size="sm" />
+                        </div>
                       ) : (
                         'Ask Harvey'
                       )}
@@ -370,10 +375,10 @@ export default function AssistantHomePage() {
                       return (
                         <button
                           key={workflow.id}
-                          className="p-4 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors text-left"
+                          className="p-4 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors text-left overflow-hidden"
                         >
-                          <h3 className="text-sm font-medium text-neutral-900 mb-1">{workflow.title}</h3>
-                          <p className="text-xs text-neutral-500 mb-8">{workflow.description}</p>
+                          <h3 className="text-sm font-medium text-neutral-900 mb-1 truncate">{workflow.title}</h3>
+                          <p className="text-xs text-neutral-500 mb-8 truncate">{workflow.description}</p>
                           <div className="flex items-center gap-1 text-neutral-500">
                             <IconComponent size={12} />
                             <span className="text-xs">{workflow.type}</span>
