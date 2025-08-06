@@ -290,13 +290,35 @@ export default function AssistantChatPage({
   // Auto-scroll when messages change
   useEffect(() => {
     // Only auto-scroll if user is near the bottom
-    if (isNearBottom) {
-      // Small delay to ensure DOM is updated
-      const timeoutId = setTimeout(() => {
-        scrollToBottom();
-      }, 100);
+    if (isNearBottom && messages.length > 0) {
+      // Check if the last message is an artifact - they need more time to render
+      const lastMessage = messages[messages.length - 1];
+      const isArtifact = lastMessage.type === 'artifact';
+      
+      // Use longer delay for artifact messages to ensure they're fully rendered
+      const delay = isArtifact ? 500 : 100;
+      
+      let timeoutId: NodeJS.Timeout;
+      
+      // For artifact messages, use requestAnimationFrame to ensure DOM is ready
+      if (isArtifact) {
+        // Double RAF to ensure React has committed to DOM
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            timeoutId = setTimeout(() => {
+              scrollToBottom();
+            }, delay);
+          });
+        });
+      } else {
+        timeoutId = setTimeout(() => {
+          scrollToBottom();
+        }, delay);
+      }
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+      };
     }
   }, [messages, isNearBottom, scrollToBottom]);
 
