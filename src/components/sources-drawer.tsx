@@ -35,50 +35,98 @@ export default function SourcesDrawer({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("All");
   
-  const sources = [
-    {
-      title: "Investopedia",
-      url: "investopedia.com",
-      favicon: "💰",
-      description: "Regulation D (Reg D) is a Securities and Exchange Commission (SEC) regulation governing private placements...",
-      references: [1, 2, 3]
-    },
-    {
-      title: "eqvista",
-      url: "eqvista.com",
-      favicon: "⚖️",
-      description: "Regulation D (Reg D) is a Securities and Exchange Commission (SEC) regulation governing private placements...",
-      references: [1, 2, 3]
-    },
-    {
-      title: "mischetti law",
-      url: "mischettilaw.com",
-      favicon: "📋",
-      description: "Often overlooked yet immensely significant, these notices pertain to state securities laws which mandate adherence...",
-      references: [4, 5, 6]
-    },
-    {
-      title: "Shu Firm",
-      url: "shufirm.com",
-      favicon: "💼",
-      description: "The issuer must provide information to non-accredited investors (not accredited investors) that is generally equivalent...",
-      references: [4, 5, 6]
-    },
-    {
-      title: "Perkins Law",
-      url: "ericperkinslaw.com",
-      favicon: "🏛️",
-      description: "The issuer must provide information to non-accredited investors (not accredited investors) that is generally equivalent...",
-      references: [4, 5, 6]
-    },
-    {
-      title: "Wickard v. Filburn, 317 U.S. 111 (1942)",
-      url: "",
-      favicon: "⚖️",
-      description: "A landmark decision holding that even personal cultivation of wheat intended for private use could be regulated...",
-      references: [4, 5, 6]
-    }
-  ];
+  const categorizedSources = {
+    "Lexis Nexis": [
+      {
+        title: "Mendes v. Johnson, 389 A.2d 781 (D.C. 1978)",
+        url: "",
+        icon: "warning-shepard",
+        description: "Addresses a landlord's right to reenter leased commercial premises and the limits of self-help eviction. The court...",
+        references: [1, 2]
+      },
+      {
+        title: "Sarete, Inc. v. 1344 U St. Ltd. P'ship, 871 A.2d 480 (D...",
+        url: "",
+        icon: "positive-shepard",
+        description: "This case explores whether a commercial landlord's use of self-help to retake possession violated tenant rights...",
+        references: [3, 4, 5]
+      },
+      {
+        title: "Martinez v. Ulloa, 22 N.Y.S.3d 787 (N.Y.App. Term. 2015)",
+        url: "",
+        icon: "citing-references",
+        description: "This case confirms that commercial landlords may face damages if self-help eviction violates procedural norms...",
+        references: [9, 10]
+      }
+    ],
+    "Web Sources": [
+      {
+        title: "Thomson Reuters",
+        url: "thomsonreuters.com",
+        icon: "reuters",
+        description: "Often overlooked yet immensely significant, these notices pertain to state securities laws which mandate adheren...",
+        references: [9, 10]
+      },
+      {
+        title: "Bloomberg",
+        url: "bloomberg.com",
+        icon: "bloomberg",
+        description: "Often overlooked yet immensely significant, these notices pertain to state securities laws which mandate adheren...",
+        references: [9, 10]
+      },
+      {
+        title: "Financial Times Adviser",
+        url: "ftadviser.com",
+        icon: "ft",
+        description: "In May 2023 the then UK government announced its intention to introduce a statutory limit of three months o...",
+        references: [9, 10]
+      }
+    ],
+    "Files": [
+      {
+        title: "Discovery_Request_21083.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [1, 2, 3]
+      },
+      {
+        title: "Probable Cause Hearing Transcripts.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [1, 2, 3]
+      },
+      {
+        title: "tmp_lease_document2023621.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [4, 5]
+      },
+      {
+        title: "AD08912631234.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [6, 7, 8]
+      },
+      {
+        title: "policy_document_12_24_08.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [9, 10, 11]
+      },
+      {
+        title: "SEC_Filing_10-K_2023.pdf",
+        url: "",
+        icon: "pdf",
+        description: "",
+        references: [12, 13]
+      }
+    ]
+  };
 
   // Skeleton loader content
   const skeletonContent = (
@@ -108,7 +156,7 @@ export default function SourcesDrawer({
       `}</style>
       
       {/* Search and Filter Section - Keep active even in loading state */}
-      <div className="px-2 pb-2">
+      <div className="px-0.5 pb-2">
         <div className="flex gap-2">
           {/* Search Input */}
           <div className="flex-1 relative">
@@ -134,8 +182,11 @@ export default function SourcesDrawer({
         </div>
       </div>
       
+      {/* Separator after search section */}
+      <div className="border-t border-neutral-200 -mx-4 mb-4" />
+      
       {/* Skeleton Sources List */}
-      <div className="space-y-3 px-2 mt-2">
+      <div className="space-y-3 px-0.5 mt-2">
         {[1, 2, 3, 4, 5, 6].map((_, index) => (
           <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
             <div className="flex items-start space-x-3">
@@ -163,11 +214,57 @@ export default function SourcesDrawer({
       </div>
 
       {/* See all link skeleton */}
-      <div className="mt-6 pt-4 border-t border-neutral-100 px-2">
-        <Skeleton width={64} height={16} />
+      <div className="mt-6 pt-4 border-t border-neutral-200 -mx-4 px-4">
+        <div className="px-0.5">
+          <Skeleton width={64} height={16} />
+        </div>
       </div>
     </>
   );
+
+  // Helper function to render source icons
+  const renderSourceIcon = (iconType: string) => {
+    switch (iconType) {
+      case "warning-shepard":
+        return (
+          <img src="/warning-shepard.svg" alt="Warning" className="w-4 h-4" />
+        );
+      case "positive-shepard":
+        return (
+          <img src="/positive-shepard.svg" alt="Positive" className="w-4 h-4" />
+        );
+      case "citing-references":
+        return (
+          <img src="/citing-references-shepard.svg" alt="Citing References" className="w-4 h-4" />
+        );
+      case "web":
+        return (
+          <div className="w-4 h-4 rounded bg-purple-600 flex items-center justify-center">
+            <span className="text-white text-[8px] font-bold">W</span>
+          </div>
+        );
+      case "reuters":
+        return (
+          <img src="/reuters-logo.jpg" alt="Thomson Reuters" className="w-4 h-4 rounded object-cover" />
+        );
+      case "bloomberg":
+        return (
+          <img src="/bloomberg.jpg" alt="Bloomberg" className="w-4 h-4 rounded object-cover" />
+        );
+      case "ft":
+        return (
+          <img src="/fin-time-logo.png" alt="Financial Times" className="w-4 h-4 rounded object-cover" />
+        );
+      case "pdf":
+        return (
+          <div className="w-4 h-4 flex items-center justify-center">
+            <img src="/pdf-icon.svg" alt="PDF" className="w-5 h-5" />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   const sourcesContent = (
     <>
@@ -196,7 +293,7 @@ export default function SourcesDrawer({
       `}</style>
       
       {/* Search and Filter Section */}
-      <div className="px-2 pb-2">
+      <div className="px-0.5 pb-4">
         <div className="flex gap-2">
           {/* Search Input */}
           <div className="flex-1 relative">
@@ -236,48 +333,89 @@ export default function SourcesDrawer({
         </div>
       </div>
       
-      {/* Sources List */}
-      <div className="space-y-3 px-2 mt-2">
-        {sources.map((source, index) => (
-          <div key={index} className="border-b border-neutral-100 pb-3 last:border-b-0">
-            <div className="flex items-start space-x-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-4 h-4 text-sm flex items-center justify-center" role="img" aria-label="Source icon">
-                    {source.favicon}
-                  </div>
-                  <h4 className="font-medium text-neutral-900" style={{ fontSize: '12px' }}>
-                    {source.title}
-                  </h4>
-                  {source.url && (
-                    <>
-                      <span className="text-neutral-400" style={{ fontSize: '12px' }}>•</span>
-                      <span className="text-neutral-600" style={{ fontSize: '12px' }}>
-                        {source.url}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <p className="text-neutral-700 leading-relaxed mb-3" style={{ fontSize: '12px' }}>
-                  {source.description}
-                </p>
-                <div className="flex items-center gap-1">
-                  {source.references.map((ref, refIndex) => (
-                    <button
-                      key={refIndex}
-                      className="inline-flex items-center justify-center border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium transition-colors"
-                      style={{ 
-                        width: '14px', 
-                        height: '14px',
-                        fontSize: '10px',
-                        lineHeight: '1',
-                        borderRadius: '4px'
-                      }}
-                    >
-                      {ref}
-                    </button>
-                  ))}
-                </div>
+      {/* Separator after search section */}
+      <div className="border-t border-neutral-200 -mx-4 mb-4" />
+      
+      {/* Categorized Sources List */}
+      <div className="mt-2">
+        {Object.entries(categorizedSources).map(([category, sources], categoryIndex) => (
+          <div key={category}>
+            {categoryIndex > 0 && (
+              <div className="border-t border-neutral-200 my-4 -mx-4" />
+            )}
+            <div className="px-0.5">
+              {/* Category Header */}
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-xs font-medium text-neutral-500">{category}</h3>
+              </div>
+              
+              {/* Sources in Category */}
+              <div className="space-y-0.5">
+                {sources.map((source, index) => {
+                  const isWebSource = category === "Web Sources" && source.url;
+                  const content = (
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {renderSourceIcon(source.icon)}
+                          <h4 className="font-medium text-neutral-900" style={{ fontSize: '12px' }}>
+                            {source.title}
+                          </h4>
+                          {source.url && (
+                            <>
+                              <span className="text-neutral-400" style={{ fontSize: '12px' }}>•</span>
+                              <span className="text-neutral-600" style={{ fontSize: '12px' }}>
+                                {source.url}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {source.description && (
+                          <p className="text-neutral-700 leading-relaxed mb-2" style={{ fontSize: '12px' }}>
+                            {source.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1">
+                          {source.references.map((ref, refIndex) => (
+                            <button
+                              key={refIndex}
+                              className="inline-flex items-center justify-center border border-neutral-200 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium transition-colors"
+                              style={{ 
+                                width: '14px', 
+                                height: '14px',
+                                fontSize: '10px',
+                                lineHeight: '1',
+                                borderRadius: '4px'
+                              }}
+                            >
+                              {ref}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+
+                  if (isWebSource) {
+                    return (
+                      <a
+                        key={index}
+                        href={`https://${source.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="-mx-2 px-2 py-2.5 hover:bg-neutral-50 rounded-md transition-colors cursor-pointer block"
+                      >
+                        {content}
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <div key={index} className="-mx-2 px-2 py-2.5 hover:bg-neutral-50 rounded-md transition-colors cursor-pointer">
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -285,13 +423,15 @@ export default function SourcesDrawer({
       </div>
 
       {/* See all link */}
-      <div className="mt-6 pt-4 border-t border-neutral-100 px-2">
-        <button className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-1">
-          See all
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 18 6-6-6-6"/>
-          </svg>
-        </button>
+      <div className="mt-6 pt-4 border-t border-neutral-200 -mx-4 px-4">
+        <div className="px-0.5">
+          <button className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-1">
+            See all
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </>
   );
