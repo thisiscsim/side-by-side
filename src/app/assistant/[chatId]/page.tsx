@@ -114,6 +114,15 @@ export default function AssistantChatPage({
   
   // Track if chat panel is being toggled interactively (not on mount)
   const [isChatToggling, setIsChatToggling] = useState(false);
+  // Track timers for threshold hold detection
+  const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const expandTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isPastCollapseThresholdRef = useRef(false);
+  const isPastExpandThresholdRef = useRef(false);
+  const [isPastCollapseThreshold, setIsPastCollapseThreshold] = useState(false);
+  const [isPastExpandThreshold, setIsPastExpandThreshold] = useState(false);
+  const [shouldTriggerCollapse, setShouldTriggerCollapse] = useState(false);
+  const [shouldTriggerExpand, setShouldTriggerExpand] = useState(false);
   
   // Track if we've already auto-collapsed the sidebar for this artifact session
   const hasAutoCollapsedSidebarRef = useRef(false);
@@ -476,6 +485,11 @@ export default function AssistantChatPage({
     }
   }, [anyArtifactPanelOpen, setSidebarOpen]);
 
+  const toggleChat = useCallback((open: boolean) => {
+    setIsChatToggling(true);
+    setChatOpen(open);
+  }, []);
+
   // Reset chat toggling flag when chat closes
   useEffect(() => {
     if (!chatOpen && isChatToggling) {
@@ -483,11 +497,36 @@ export default function AssistantChatPage({
     }
   }, [chatOpen, isChatToggling]);
 
-  const toggleChat = (open: boolean) => {
-    console.log('Toggling chat to:', open);
-    setIsChatToggling(true);
-    setChatOpen(open);
-  };
+  // Handle collapse trigger
+  useEffect(() => {
+    if (shouldTriggerCollapse) {
+      setIsResizing(false); // Stop resizing before triggering animation
+      // Use requestAnimationFrame to ensure state update is processed
+      requestAnimationFrame(() => {
+        toggleChat(false);
+        setShouldTriggerCollapse(false);
+      });
+    }
+  }, [shouldTriggerCollapse, toggleChat]);
+
+  // Handle expand trigger
+  useEffect(() => {
+    if (shouldTriggerExpand) {
+      setIsResizing(false); // Stop resizing before closing artifacts
+      // Use requestAnimationFrame to ensure state update is processed
+      requestAnimationFrame(() => {
+        setArtifactPanelOpen(false);
+        setDraftArtifactPanelOpen(false);
+        setReviewArtifactPanelOpen(false);
+        setUnifiedArtifactPanelOpen(false);
+        setSelectedArtifact(null);
+        setSelectedDraftArtifact(null);
+        setSelectedReviewArtifact(null);
+        setCurrentArtifactType(null);
+        setShouldTriggerExpand(false);
+      });
+    }
+  }, [shouldTriggerExpand]);
 
   const sendMessage = () => {
     if (inputValue.trim() && !isLoading) {
@@ -552,31 +591,115 @@ export default function AssistantChatPage({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!artifactPanelOpen && !draftArtifactPanelOpen && !reviewArtifactPanelOpen) return;
+    // Allow resizing if any artifact panel is open
+    if (!anyArtifactPanelOpen) return;
     e.preventDefault();
+
     setIsResizing(true);
+    // Reset threshold states when starting a new resize
+    isPastCollapseThresholdRef.current = false;
+    isPastExpandThresholdRef.current = false;
+    setIsPastCollapseThreshold(false);
+    setIsPastExpandThreshold(false);
   };
 
   useEffect(() => {
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
       
       if (containerRef.current) {
         const containerRect = containerRef.current.getBoundingClientRect();
         let newWidth = e.clientX - containerRect.left;
+
         
-        // Enforce min/max constraints
-        newWidth = Math.max(MIN_CHAT_WIDTH, Math.min(newWidth, MAX_CHAT_WIDTH));
+        // Handle collapse threshold (dragging below minimum width)
+        if (newWidth < MIN_CHAT_WIDTH - 50 && chatOpen) {
+
+          if (!isPastCollapseThresholdRef.current) {
+
+            isPastCollapseThresholdRef.current = true;
+            setIsPastCollapseThreshold(true);
+            // Start timer for collapse
+            collapseTimerRef.current = setTimeout(() => {
+
+              isPastCollapseThresholdRef.current = false;
+              setIsPastCollapseThreshold(false);
+              setShouldTriggerCollapse(true);
+            }, 250); // Quarter second hold time
+          }
+        } else {
+          // User moved back above threshold, cancel collapse
+          if (isPastCollapseThresholdRef.current) {
+
+            isPastCollapseThresholdRef.current = false;
+            setIsPastCollapseThreshold(false);
+            if (collapseTimerRef.current) {
+              clearTimeout(collapseTimerRef.current);
+              collapseTimerRef.current = null;
+            }
+          }
+        }
         
-        setChatWidth(newWidth + 1); // +1 to account for the border
+        // Handle expand threshold (dragging above maximum width to collapse artifacts)
+        if (newWidth > MAX_CHAT_WIDTH + 50 && chatOpen && anyArtifactPanelOpen) {
+
+          if (!isPastExpandThresholdRef.current) {
+
+            isPastExpandThresholdRef.current = true;
+            setIsPastExpandThreshold(true);
+            // Start timer for artifact collapse
+            expandTimerRef.current = setTimeout(() => {
+
+              isPastExpandThresholdRef.current = false;
+              setIsPastExpandThreshold(false);
+              setShouldTriggerExpand(true);
+            }, 250); // Quarter second hold time
+          }
+        } else {
+          // User moved back below threshold, cancel artifact collapse
+          if (isPastExpandThresholdRef.current) {
+
+            isPastExpandThresholdRef.current = false;
+            setIsPastExpandThreshold(false);
+            if (expandTimerRef.current) {
+              clearTimeout(expandTimerRef.current);
+              expandTimerRef.current = null;
+            }
+          }
+        }
+        
+        // Only update width if chat is open and not past collapse threshold
+        if (chatOpen && !isPastCollapseThreshold) {
+          // Enforce min/max constraints
+          newWidth = Math.max(MIN_CHAT_WIDTH, Math.min(newWidth, MAX_CHAT_WIDTH));
+          setChatWidth(newWidth + 1); // +1 to account for the border
+        }
       }
     };
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      isPastCollapseThresholdRef.current = false;
+      isPastExpandThresholdRef.current = false;
+      setIsPastCollapseThreshold(false);
+      setIsPastExpandThreshold(false);
+      setShouldTriggerCollapse(false);
+      setShouldTriggerExpand(false);
+      
+      // Clear any pending timers
+      if (collapseTimerRef.current) {
+        clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = null;
+      }
+      if (expandTimerRef.current) {
+        clearTimeout(expandTimerRef.current);
+        expandTimerRef.current = null;
+      }
     };
 
     if (isResizing) {
+
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       
@@ -590,8 +713,20 @@ export default function AssistantChatPage({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      
+      // Clean up timers and refs
+      if (collapseTimerRef.current) {
+        clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = null;
+      }
+      if (expandTimerRef.current) {
+        clearTimeout(expandTimerRef.current);
+        expandTimerRef.current = null;
+      }
+      isPastCollapseThresholdRef.current = false;
+      isPastExpandThresholdRef.current = false;
     };
-  }, [isResizing]);
+  }, [isResizing, chatOpen, artifactPanelOpen, draftArtifactPanelOpen, reviewArtifactPanelOpen, anyArtifactPanelOpen, isPastCollapseThreshold, isPastExpandThreshold]);
 
   return (
     <div className="flex h-screen w-full">
@@ -602,19 +737,20 @@ export default function AssistantChatPage({
       <SidebarInset>
         <div ref={containerRef} className="h-screen flex text-sm" style={{ fontSize: '14px', lineHeight: '20px' }}>
           {/* AI Chat Interface - Left Panel */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {chatOpen && (
               <motion.div 
+                key="chat-panel"
                 initial={isChatToggling ? { width: 0, opacity: 0 } : false}
-                animate={{ 
+                animate={isResizing ? undefined : { 
                   width: anyArtifactPanelOpen ? chatWidth : (sourcesDrawerOpen ? 'calc(100% - 400px)' : '100%'),
                   opacity: 1
                 }}
                 exit={{ width: 0, opacity: 0 }}
-                transition={!isResizing ? {
+                transition={{
                   width: PANEL_ANIMATION,
                   opacity: { duration: 0.15, ease: "easeOut" }
-                } : { duration: 0 }}
+                }}
                 onAnimationComplete={() => {
                   if (isChatToggling) {
                     setIsChatToggling(false);
@@ -622,7 +758,8 @@ export default function AssistantChatPage({
                 }}
                 className="flex relative overflow-hidden bg-white"
                 style={{ 
-                  flexShrink: 0
+                  flexShrink: 0,
+                  ...(isResizing && anyArtifactPanelOpen ? { width: chatWidth } : {})
                 }}
               >
         <div className="flex flex-col bg-white relative" style={{ 
@@ -1079,16 +1216,20 @@ export default function AssistantChatPage({
           </motion.div>
         </div>
         
-        {/* Resizable Separator - Only show when artifact panel is open */}
-        {anyArtifactPanelOpen && (
+        {/* Resizable Separator - Only show when artifact panel is open and chat is open */}
+        {anyArtifactPanelOpen && chatOpen && (
           <div 
             className="relative group"
             onMouseEnter={() => setIsHoveringResizer(true)}
             onMouseLeave={() => setIsHoveringResizer(false)}
             onMouseDown={handleMouseDown}
             style={{
-              width: isHoveringResizer || isResizing ? '2px' : '1px',
-              backgroundColor: isHoveringResizer || isResizing ? '#d4d4d4' : '#e5e5e5',
+              width: (isPastCollapseThreshold || isPastExpandThreshold) 
+                ? '3px' // Thicker when past threshold
+                : (isHoveringResizer || isResizing ? '2px' : '1px'),
+              backgroundColor: (isPastCollapseThreshold || isPastExpandThreshold) 
+                ? '#262626' // neutral-800 when past threshold
+                : (isHoveringResizer || isResizing ? '#d4d4d4' : '#e5e5e5'),
               cursor: 'col-resize',
               transition: 'all 0.15s ease',
               flexShrink: 0,
