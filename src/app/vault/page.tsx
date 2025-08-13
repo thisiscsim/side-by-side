@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { AnimatedBackground } from "../../../components/motion-primitives/animated-background";
+import Link from "next/link";
 
 export default function VaultPage() {
   const [activeTab, setActiveTab] = useState("all");
@@ -15,7 +16,7 @@ export default function VaultPage() {
   const projects = [
     {
       id: 1,
-      name: "Nikhil's Project",
+      name: "Nikhil's Personal Project",
       fileCount: "2,593 files",
       type: "project",
       status: ""
@@ -194,16 +195,17 @@ export default function VaultPage() {
             {/* Projects Grid */}
             <div className="flex-1 pt-4 pb-6 overflow-y-auto">
               <div className="grid grid-cols-4 gap-4">
-                {filteredProjects.map((project) => (
-                                  <div
-                  key={project.id}
-                  className="cursor-pointer"
-                >
+                {filteredProjects.map((project) => {
+                  const isPersonalProject = project.name === "Nikhil's Personal Project";
+                  const content = (
+                    <div
+                      className="cursor-pointer"
+                    >
                   {/* Icon container */}
                   <div className="w-full bg-neutral-100 rounded-lg flex items-center justify-center mb-2.5" style={{ height: '162px' }}>
                     <img 
                       src={
-                        project.name === "Nikhil's Project" ? "/privateFolderIcon.svg" :
+                        project.name === "Nikhil's Personal Project" ? "/privateFolderIcon.svg" :
                         project.type === "shared" ? "/sharedFolderIcon.svg" :
                         project.type === "knowledge" ? "/knowledgeBaseIcon.svg" :
                         "/folderIcon.svg"
@@ -231,8 +233,19 @@ export default function VaultPage() {
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-                ))}
+                    </div>
+                  );
+                  
+                  return isPersonalProject ? (
+                    <Link href="/personal-project" key={project.id} className="block no-underline">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={project.id}>
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
