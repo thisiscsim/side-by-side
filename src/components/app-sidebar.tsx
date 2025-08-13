@@ -44,6 +44,11 @@ export function AppSidebar() {
   
   // Determine the selected item based on current path
   const getSelectedItem = () => {
+    // Check if the current path is a vault sub-page
+    if (pathname === "/vault" || pathname === "/personal-project") {
+      return "Vault"
+    }
+    
     const currentItem = menuItems.find(item => item.href === pathname)
     return currentItem?.title || "Assistant"
   }
