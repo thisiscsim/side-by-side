@@ -1,0 +1,251 @@
+"use client";
+
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Brain, ChevronDown, ChevronRight, FileText, Table } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+type ThinkingVariant = "analysis" | "draft" | "review";
+
+export interface ThinkingStateProps {
+  variant: ThinkingVariant;
+  title?: string;
+  durationSeconds?: number;
+  /**
+   * Optional summary text shown at the top of the expanded area
+   */
+  summary?: string;
+  /**
+   * Optional bullet list to render inside the expanded area
+   */
+  bullets?: string[];
+  /**
+   * Optional additional text to show after bullets
+   */
+  additionalText?: string;
+  /**
+   * If true, the component starts expanded
+   */
+  defaultOpen?: boolean;
+  /**
+   * Optional timing data for tooltip
+   */
+  timingData?: {
+    model?: string;
+    date?: string;
+    timestamp?: string;
+    responseTime?: string;
+  };
+  /**
+   * If true, this is a child thinking state that cannot be collapsed
+   */
+  isChild?: boolean;
+  /**
+   * Optional child thinking states to render within this one
+   */
+  childStates?: ThinkingStateProps[];
+}
+
+function getVariantIcon(variant: ThinkingVariant) {
+  switch (variant) {
+    case "draft":
+      return <FileText className="w-3.5 h-3.5" />;
+    case "review":
+      return <Table className="w-3.5 h-3.5" />;
+    default:
+      return <Brain className="w-3.5 h-3.5" />;
+  }
+}
+
+function formatDuration(seconds?: number) {
+  if (!seconds || seconds <= 0) return "";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  if (secs === 0) return `${mins}m`;
+  return `${mins}m ${secs}s`;
+}
+
+/**
+ * Compact, reusable expandable block that surfaces the AI's high-level
+ * thinking. Appears above an assistant message, aligned with the message
+ * content area (to the right of the avatar).
+ */
+export default function ThinkingState({
+  variant,
+  title = "Thought",
+  durationSeconds,
+  summary,
+  bullets,
+  additionalText,
+  defaultOpen = false,
+  timingData = {
+    model: "Claude 4 Sonnet",
+    date: new Date().toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric'
+    }),
+    timestamp: new Date().toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'UTC'
+    }),
+    responseTime: "6.987s"
+  },
+  isChild = false,
+  childStates = [],
+}: ThinkingStateProps) {
+  const [open, setOpen] = useState<boolean>(defaultOpen || isChild);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+
+  const headerLabel = isChild ? title : `${title}${durationSeconds ? ` for ${formatDuration(durationSeconds)}` : ""}`;
+
+  return (
+    <div className={`${open && !isChild ? 'mb-4' : 'mb-1'} ${!isChild ? 'pl-2' : 'pl-0'}`}>
+      <button
+        type="button"
+        onClick={isChild ? undefined : () => setOpen(!open)}
+        onMouseEnter={isChild ? undefined : () => setIsHovered(true)}
+        onMouseLeave={isChild ? undefined : () => setIsHovered(false)}
+        className={`w-full flex items-start gap-1.5 text-[13px] leading-5 text-neutral-700 py-0 ${!isChild ? 'hover:opacity-80 transition-opacity cursor-pointer px-0' : 'cursor-default px-0'}`}
+      >
+        <span className="relative flex items-center justify-center text-neutral-700 mt-0.5 w-3.5 h-3.5">
+          {isChild ? (
+            // Child states always show their variant icon
+            getVariantIcon(variant)
+          ) : (
+            // Parent states have animated icon transitions
+            <AnimatePresence mode="wait">
+              {open ? (
+                <motion.div
+                  key="chevron-down"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </motion.div>
+              ) : isHovered ? (
+                <motion.div
+                  key="chevron-right"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="variant-icon"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  {getVariantIcon(variant)}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+        </span>
+        <div className="flex-1 text-left">
+          {isChild ? (
+            // Child states don't have tooltips
+            <span className="font-medium truncate inline-block">
+              {headerLabel}
+            </span>
+          ) : (
+            // Parent states have tooltips
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="font-medium truncate inline-block">
+                  {headerLabel}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent 
+                side="right" 
+                align="center"
+                sideOffset={8}
+                className="bg-white border border-neutral-200 text-neutral-700 px-3 py-2 shadow-xs"
+              >
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between gap-8">
+                  <span className="text-neutral-600">Model:</span>
+                  <span className="text-neutral-900">{timingData.model}</span>
+                </div>
+                <div className="flex justify-between gap-8">
+                  <span className="text-neutral-600">Date:</span>
+                  <span className="text-neutral-900">{timingData.date}</span>
+                </div>
+                <div className="flex justify-between gap-8">
+                  <span className="text-neutral-600">Timestamp:</span>
+                  <span className="text-neutral-900">{timingData.timestamp}</span>
+                </div>
+                <div className="flex justify-between gap-8">
+                  <span className="text-neutral-600">Response time:</span>
+                  <span className="text-neutral-900">{timingData.responseTime}</span>
+                </div>
+              </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={isChild ? undefined : { height: 0, opacity: 0 }}
+            animate={isChild ? undefined : { height: "auto", opacity: 1 }}
+            exit={isChild ? undefined : { height: 0, opacity: 0 }}
+            transition={isChild ? undefined : { duration: 0.18, ease: "easeOut" }}
+            className="overflow-hidden relative"
+          >
+            {/* Vertical line from chevron */}
+            <div 
+              className="absolute left-[7px] top-0 bottom-0 w-[1px] bg-neutral-400/20"
+              style={{ marginBottom: '-1px' }}
+            />
+            <div className="mt-1 pl-6 text-[13px] leading-5 text-neutral-600 space-y-2">
+              {summary && <p>{summary}</p>}
+              {bullets && bullets.length > 0 && (
+                <ul className="list-disc pl-4 space-y-1">
+                  {bullets.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              )}
+              {additionalText && (
+                <p className="whitespace-pre-wrap">{additionalText}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Render child thinking states at the same level */}
+      {open && !isChild && childStates && childStates.length > 0 && (
+        <div className="space-y-1 mt-2">
+          {childStates.map((child, idx) => (
+            <ThinkingState
+              key={idx}
+              {...child}
+              isChild={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+

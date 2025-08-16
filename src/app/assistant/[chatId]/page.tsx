@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Spinner } from "@/components/ui/spinner";
 import FileManagementDialog from "@/components/file-management-dialog";
+import ThinkingState from "@/components/thinking-state";
 
 type Message = {
   role: 'user' | 'assistant';
@@ -45,6 +46,60 @@ const PANEL_ANIMATION = {
   duration: 0.3,
   ease: "easeOut" as const
 };
+
+// Basic default content for the expandable thinking state per response type
+function getThinkingContent(variant: 'analysis' | 'draft' | 'review'): {
+  summary: string;
+  bullets: string[];
+  additionalText?: string;
+  childStates?: Array<{
+    variant: 'analysis' | 'draft' | 'review';
+    title: string;
+    summary?: string;
+    bullets?: string[];
+  }>;
+} {
+  switch (variant) {
+    case 'draft':
+      return {
+        summary: 'Planning structure and content before drafting the document.',
+        bullets: [
+          'Identify audience and objective',
+          'Assemble relevant facts and authorities',
+          'Outline sections and key arguments'
+        ]
+      };
+    case 'review':
+      return {
+        summary: 'Parsing materials and selecting fields for a concise comparison.',
+        bullets: [
+          'Locate documents and parse key terms',
+          'Normalize entities and dates',
+          'Populate rows and verify data consistency'
+        ]
+      };
+    default:
+      return {
+        summary: 'The user wants me to recreate a morphing dialog component using shadcn dialog as the foundation. This sounds like they want a dialog that has smooth morphing animations - likely expanding from a trigger element or morphing between different states/sizes.',
+        bullets: [
+          'Since they mentioned "recreate", they might have seen this pattern somewhere, but they haven\'t provided a specific reference.',
+          'I should first understand their current codebase structure to see what\'s available',
+          'Then build a morphing dialog component that extends the shadcn dialog with smooth transitions'
+        ],
+        additionalText: '',
+        childStates: [
+          {
+            variant: 'analysis',
+            title: 'Found codebase structure',
+            summary: 'Searching "Give me an overview of the codebase"',
+            bullets: [
+              'Reading files: layout.tsx, globals.css'
+            ]
+          }
+        ]
+      };
+  }
+}
 
 // In a real app, this would fetch from an API based on the chatId
 const getChatTitle = (chatId: string): string => {
@@ -926,7 +981,18 @@ export default function AssistantChatPage({
                   </div>
                   
                   {/* Message Content */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    {message.role !== 'user' && (
+                      <ThinkingState
+                        variant={message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis'}
+                        title="Thought"
+                        durationSeconds={6}
+                        summary={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').summary}
+                        bullets={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').bullets}
+                        additionalText={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').additionalText}
+                        childStates={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').childStates}
+                      />
+                    )}
                     {message.type === 'artifact' ? (
                       <div className="space-y-3">
                         <div className="text-neutral-900 leading-relaxed pl-2">
