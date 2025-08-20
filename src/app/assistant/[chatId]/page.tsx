@@ -602,17 +602,17 @@ export default function AssistantChatPage({
       // Scroll to bottom after messages are added
       setTimeout(() => scrollToBottom(), 50);
       
-      // Progressively reveal thinking content
-      // Show summary after 500ms
+      // Progressively reveal thinking content with smoother timing
+      // Show summary after 600ms (to sync with animation)
       setTimeout(() => {
         setMessages(prev => prev.map((msg, idx) => 
           idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading && msg.loadingState
             ? { ...msg, loadingState: { ...msg.loadingState, showSummary: true } }
             : msg
         ));
-      }, 500);
+      }, 600);
       
-      // Show bullets one by one
+      // Show bullets one by one with better timing for animations
       const bullets = thinkingContent.bullets || [];
       bullets.forEach((_, bulletIdx) => {
         setTimeout(() => {
@@ -622,7 +622,7 @@ export default function AssistantChatPage({
               : msg
           ));
           scrollToBottom();
-        }, 1000 + (bulletIdx * 500)); // Start at 1s, then 500ms between each bullet
+        }, 1200 + (bulletIdx * 400)); // Start at 1.2s, then 400ms between each bullet for smoother reveal
       });
       
       // Show additional text if exists
@@ -634,7 +634,7 @@ export default function AssistantChatPage({
               : msg
           ));
           scrollToBottom();
-        }, 1000 + (bullets.length * 500) + 200);
+        }, 1200 + (bullets.length * 400) + 300);
       }
       
       // Show child states if exist
@@ -647,7 +647,7 @@ export default function AssistantChatPage({
               : msg
           ));
           scrollToBottom();
-        }, 2500 + (childIdx * 300));
+        }, 2800 + (childIdx * 350)); // Slightly adjusted timing for child states
       });
       
       // Simulate AI response after thinking states complete
@@ -671,7 +671,7 @@ export default function AssistantChatPage({
         
         setIsLoading(false);
         scrollToBottom();
-      }, 3500); // Increased to 3.5 seconds to simulate AI thinking time
+      }, 4000); // Adjusted to 4 seconds to account for smoother animation timing
     }
   }, [inputValue, isLoading, sourcesDrawerOpen, hasOpenedSourcesDrawerRef, scrollToBottom]);
   

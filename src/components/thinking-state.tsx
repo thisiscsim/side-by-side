@@ -254,34 +254,102 @@ export default function ThinkingState({
               style={{ marginBottom: '-1px' }}
             />
             <div className="mt-1 pl-6 text-[13px] leading-5 text-neutral-600 space-y-2">
-              {summary && <p>{summary}</p>}
-              {bullets && bullets.length > 0 && (
-                <ul className="list-disc pl-4 space-y-1">
-                  {bullets.map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-              )}
-              {additionalText && (
-                <p className="whitespace-pre-wrap">{additionalText}</p>
-              )}
+              <AnimatePresence mode="wait">
+                {summary && (
+                  <motion.p
+                    key="summary"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    {summary}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              
+              <AnimatePresence>
+                {bullets && bullets.length > 0 && (
+                  <motion.ul 
+                    className="list-disc pl-4 space-y-1"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {bullets.map((item, idx) => (
+                        <motion.li 
+                          key={`bullet-${idx}`}
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ 
+                            duration: 0.3, 
+                            ease: "easeOut",
+                            delay: idx * 0.05 // Stagger bullets slightly
+                          }}
+                        >
+                          {item}
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+              
+              <AnimatePresence>
+                {additionalText && (
+                  <motion.p 
+                    key="additional"
+                    className="whitespace-pre-wrap"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    {additionalText}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
       
       {/* Render child thinking states at the same level */}
-      {open && !isChild && childStates && childStates.length > 0 && (
-        <div className="space-y-1 mt-2">
-          {childStates.map((child, idx) => (
-            <ThinkingState
-              key={idx}
-              {...child}
-              isChild={true}
-            />
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {open && !isChild && childStates && childStates.length > 0 && (
+          <motion.div 
+            className="space-y-1 mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AnimatePresence mode="popLayout">
+              {childStates.map((child, idx) => (
+                <motion.div
+                  key={`child-${idx}`}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    ease: "easeOut",
+                    delay: idx * 0.1 // Stagger child states
+                  }}
+                >
+                  <ThinkingState
+                    {...child}
+                    isChild={true}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
