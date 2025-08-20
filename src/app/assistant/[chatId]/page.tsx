@@ -535,9 +535,10 @@ export default function AssistantChatPage({
     }
   }, [shouldTriggerExpand]);
 
-  const sendMessage = useCallback(() => {
-    if (inputValue.trim() && !isLoading) {
-      const userMessage = inputValue;
+  const sendMessage = useCallback((messageOverride?: string) => {
+    const messageToSend = messageOverride || inputValue;
+    if (messageToSend.trim() && !isLoading) {
+      const userMessage = messageToSend;
       setInputValue('');
       setIsLoading(true);
       
@@ -681,7 +682,7 @@ export default function AssistantChatPage({
       setInputValue(initialMessage);
       // Use a short timeout to ensure the component is fully mounted
       setTimeout(() => {
-        sendMessage();
+        sendMessage(initialMessage);
       }, 100);
     }
   }, [initialMessage, sendMessage]);
@@ -1330,7 +1331,7 @@ export default function AssistantChatPage({
                 <div className="flex items-center space-x-2">
                   {/* Send Button */}
                   <button
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={!inputValue.trim() || isLoading}
                     className={`p-2 focus:outline-none flex items-center justify-center transition-all bg-neutral-900 text-neutral-0 hover:bg-neutral-800 ${
                       !inputValue.trim() || isLoading ? 'cursor-not-allowed' : ''
