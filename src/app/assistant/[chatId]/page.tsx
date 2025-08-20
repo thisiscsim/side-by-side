@@ -39,6 +39,14 @@ type Message = {
     subtitle: string;
     variant?: 'review' | 'draft'; // Determines which panel to open
   };
+  isLoading?: boolean;
+  thinkingContent?: ReturnType<typeof getThinkingContent>;
+  loadingState?: {
+    showSummary: boolean;
+    visibleBullets: number;
+    showAdditionalText: boolean;
+    visibleChildStates: number;
+  };
 };
 
 // Shared animation configuration for consistency - refined timing
@@ -164,6 +172,7 @@ export default function AssistantChatPage({
   const [unifiedArtifactPanelOpen, setUnifiedArtifactPanelOpen] = useState(false);
   const [currentArtifactType, setCurrentArtifactType] = useState<'draft' | 'review' | null>(null);
   const [isFileManagementOpen, setIsFileManagementOpen] = useState(false);
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const hasProcessedInitialMessageRef = useRef(false);
   
@@ -240,64 +249,7 @@ export default function AssistantChatPage({
 
 
 
-  // Process initial message when component mounts
-  useEffect(() => {
-    if (initialMessage && !hasProcessedInitialMessageRef.current) {
-      hasProcessedInitialMessageRef.current = true;
-      // Add the user message
-      setMessages([{ role: 'user', content: initialMessage, type: 'text' }]);
-      setIsLoading(true);
-      
-      // Determine artifact type using weighted keyword scoring
-      const artifactType = detectArtifactType(initialMessage);
-      const isDraftArtifact = artifactType === 'draft';
-      const isReviewArtifact = artifactType === 'review';
-      
-      // Auto-expand sources drawer on first message (including after refresh)
-      // BUT only if it's not a review artifact
-      if (!hasOpenedSourcesDrawerRef.current && !isReviewArtifact) {
-        setTimeout(() => {
-          setSourcesDrawerOpen(true);
-          hasOpenedSourcesDrawerRef.current = true;
-        }, 1000); // Open drawer during AI thinking time
-      }
-      
-      // Simulate AI response
-      setTimeout(() => {
-        if (isDraftArtifact) {
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'I have drafted a memo for you. Please let me know if you would like to continue editing the draft or if you need any specific changes or additional information included.',
-            type: 'artifact',
-            artifactData: {
-              title: 'Record of Deliberation',
-              subtitle: 'Version 1',
-              variant: 'draft'
-            }
-          }]);
-        } else if (isReviewArtifact) {
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'I have generated a review table extracting terms from the industrial merger agreements as requested. Please let me know if you would like to continue editing the table or if you need any specific changes.',
-            type: 'artifact',
-            artifactData: {
-              title: 'Extraction of Agreements and Provisions',
-              subtitle: '24 columns · 104 rows',
-              variant: 'review'
-            }
-          }]);
-        } else {
-          // Default to legal analysis for general messages
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'legal-analysis',
-            type: 'text'
-          }]);
-        }
-        setIsLoading(false);
-      }, 3500); // Increased to 3.5 seconds to simulate AI thinking time
-    }
-  }, [initialMessage, isFromHomepage]);
+
 
   // Update edited artifact title when selected artifact changes
   useEffect(() => {
@@ -583,9 +535,9 @@ export default function AssistantChatPage({
     }
   }, [shouldTriggerExpand]);
 
-  const sendMessage = () => {
+  const sendMessage = useCallback(() => {
     if (inputValue.trim() && !isLoading) {
-      setMessages([...messages, { role: 'user', content: inputValue, type: 'text' }]);
+      const userMessage = inputValue;
       setInputValue('');
       setIsLoading(true);
       
@@ -596,11 +548,8 @@ export default function AssistantChatPage({
         textarea.style.height = '60px'; // Reset to minHeight
       }
       
-      // Always scroll to bottom when user sends a message
-      setTimeout(() => scrollToBottom(), 50);
-      
       // Determine artifact type using weighted keyword scoring
-      const artifactType = detectArtifactType(inputValue);
+      const artifactType = detectArtifactType(userMessage);
       const isDraftArtifact = artifactType === 'draft';
       const isReviewArtifact = artifactType === 'review';
       
@@ -613,37 +562,129 @@ export default function AssistantChatPage({
         }, 1000); // Open drawer during AI thinking time
       }
       
-      // Simulate AI response with artifact (you can replace this with actual AI integration)
+      // Get the thinking content for the appropriate variant
+      const variant = isDraftArtifact ? 'draft' : isReviewArtifact ? 'review' : 'analysis';
+      const thinkingContent = getThinkingContent(variant);
+      
+      // Initialize progressive loading states - show content piece by piece
+      const loadingState = {
+        showSummary: false,
+        visibleBullets: 0,
+        showAdditionalText: false,
+        visibleChildStates: 0
+      };
+      
+      // Create assistant message with loading thinking states
+      const assistantMessage = {
+        role: 'assistant' as const,
+        content: '', // Empty initially, will be populated after thinking
+        type: isDraftArtifact || isReviewArtifact ? 'artifact' as const : 'text' as const,
+        thinkingContent,
+        loadingState,
+        isLoading: true,
+        ...(isDraftArtifact || isReviewArtifact ? {
+          artifactData: {
+            title: isDraftArtifact ? 'Record of Deliberation' : 'Extraction of Agreements and Provisions',
+            subtitle: isDraftArtifact ? 'Version 1' : '24 columns · 104 rows',
+            variant: isDraftArtifact ? 'draft' as const : 'review' as const
+          }
+        } : {})
+      };
+      
+      // Add both user and assistant messages in a single update
+      setMessages(prev => [
+        ...prev, 
+        { role: 'user' as const, content: userMessage, type: 'text' as const },
+        assistantMessage
+      ]);
+      
+      // Scroll to bottom after messages are added
+      setTimeout(() => scrollToBottom(), 50);
+      
+      // Progressively reveal thinking content
+      // Show summary after 500ms
       setTimeout(() => {
-        if (isDraftArtifact || isReviewArtifact) {
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: isDraftArtifact 
-              ? 'I have drafted a memo for you. Please let me know if you would like to continue editing the draft or if you need any specific changes or additional information included.'
-              : 'I have generated a review table extracting terms from the industrial merger agreements as requested. Please let me know if you would like to continue editing the table or if you need any specific changes.',
-            type: 'artifact',
-            artifactData: {
-              title: isDraftArtifact 
-                ? 'Record of Deliberation'
-                : 'Extraction of Agreements and Provisions',
-              subtitle: isDraftArtifact 
-                ? 'Version 1'
-                : '24 columns · 104 rows',
-              variant: isDraftArtifact ? 'draft' : 'review'
-            }
-          }]);
-        } else {
-          // Regular text response if no keywords match
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'legal-analysis',
-            type: 'text'
-          }]);
-        }
+        setMessages(prev => prev.map((msg, idx) => 
+          idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading && msg.loadingState
+            ? { ...msg, loadingState: { ...msg.loadingState, showSummary: true } }
+            : msg
+        ));
+      }, 500);
+      
+      // Show bullets one by one
+      const bullets = thinkingContent.bullets || [];
+      bullets.forEach((_, bulletIdx) => {
+        setTimeout(() => {
+          setMessages(prev => prev.map((msg, idx) => 
+            idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading && msg.loadingState
+              ? { ...msg, loadingState: { ...msg.loadingState, visibleBullets: bulletIdx + 1 } }
+              : msg
+          ));
+          scrollToBottom();
+        }, 1000 + (bulletIdx * 500)); // Start at 1s, then 500ms between each bullet
+      });
+      
+      // Show additional text if exists
+      if (thinkingContent.additionalText) {
+        setTimeout(() => {
+          setMessages(prev => prev.map((msg, idx) => 
+            idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading && msg.loadingState
+              ? { ...msg, loadingState: { ...msg.loadingState, showAdditionalText: true } }
+              : msg
+          ));
+          scrollToBottom();
+        }, 1000 + (bullets.length * 500) + 200);
+      }
+      
+      // Show child states if exist
+      const childStates = thinkingContent.childStates || [];
+      childStates.forEach((_, childIdx) => {
+        setTimeout(() => {
+          setMessages(prev => prev.map((msg, idx) => 
+            idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading && msg.loadingState
+              ? { ...msg, loadingState: { ...msg.loadingState, visibleChildStates: childIdx + 1 } }
+              : msg
+          ));
+          scrollToBottom();
+        }, 2500 + (childIdx * 300));
+      });
+      
+      // Simulate AI response after thinking states complete
+      setTimeout(() => {
+        // Update the assistant message with actual content and remove loading state
+        setMessages(prev => prev.map((msg, idx) => {
+          if (idx === prev.length - 1 && msg.role === 'assistant' && msg.isLoading) {
+            return {
+              ...msg,
+              content: isDraftArtifact 
+                ? 'I have drafted a memo for you. Please let me know if you would like to continue editing the draft or if you need any specific changes or additional information included.'
+                : isReviewArtifact
+                  ? 'I have generated a review table extracting terms from the industrial merger agreements as requested. Please let me know if you would like to continue editing the table or if you need any specific changes.'
+                  : 'legal-analysis',
+              isLoading: false,
+              loadingStates: undefined // Clear loading states after content appears
+            };
+          }
+          return msg;
+        }));
+        
         setIsLoading(false);
+        scrollToBottom();
       }, 3500); // Increased to 3.5 seconds to simulate AI thinking time
     }
-  };
+  }, [inputValue, isLoading, sourcesDrawerOpen, hasOpenedSourcesDrawerRef, scrollToBottom]);
+  
+  // Process initial message when component mounts
+  useEffect(() => {
+    if (initialMessage && !hasProcessedInitialMessageRef.current) {
+      hasProcessedInitialMessageRef.current = true;
+      setInputValue(initialMessage);
+      // Use a short timeout to ensure the component is fully mounted
+      setTimeout(() => {
+        sendMessage();
+      }, 100);
+    }
+  }, [initialMessage, sendMessage]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Allow resizing if any artifact panel is open
@@ -957,6 +998,7 @@ export default function AssistantChatPage({
               transition={initialMessage && isFromHomepage && !hasPlayedAnimationsRef.current ? { delay: 0.4, duration: 0.6 } : {}}
             >
               <div className="mx-auto" style={{ maxWidth: '740px' }}>
+
             {messages.length === 0 ? (
               <div className="text-center text-neutral-500 mt-8">
                 <p>Start a conversation with Harvey</p>
@@ -982,18 +1024,45 @@ export default function AssistantChatPage({
                   
                   {/* Message Content */}
                   <div className="flex-1 min-w-0 pt-0.5">
-                    {message.role !== 'user' && (
-                      <ThinkingState
-                        variant={message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis'}
-                        title="Thought"
-                        durationSeconds={6}
-                        summary={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').summary}
-                        bullets={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').bullets}
-                        additionalText={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').additionalText}
-                        childStates={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').childStates}
-                      />
-                    )}
-                    {message.type === 'artifact' ? (
+                    {message.role === 'assistant' && (
+                      <>
+
+                        {/* Show loading thinking states OR regular thinking state */}
+                        {message.isLoading && message.thinkingContent && message.loadingState ? (
+                          // Loading thinking states - progressively reveal content
+                          <ThinkingState
+                            variant={message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis'}
+                            title="Thought"
+                            durationSeconds={6}
+                            summary={message.loadingState.showSummary ? message.thinkingContent.summary : undefined}
+                            bullets={message.thinkingContent.bullets?.slice(0, message.loadingState.visibleBullets)}
+                            additionalText={message.loadingState.showAdditionalText ? message.thinkingContent.additionalText : undefined}
+                            childStates={message.thinkingContent.childStates?.slice(0, message.loadingState.visibleChildStates)}
+                            isLoading={true} // This will keep it expanded and show shimmer
+                          />
+                        ) : (
+                          // Regular thinking state (after loading)
+                          <ThinkingState
+                            variant={message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis'}
+                            title="Thought"
+                            durationSeconds={6}
+                            summary={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').summary}
+                            bullets={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').bullets}
+                            additionalText={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').additionalText}
+                            childStates={getThinkingContent(message.type === 'artifact' ? (message.artifactData?.variant === 'draft' ? 'draft' : 'review') : 'analysis').childStates}
+                            defaultOpen={false} // Will be collapsed after loading
+                          />
+                        )}
+                        
+                        {/* Show content only if not loading */}
+                        {!message.isLoading && message.content && (
+                          <AnimatePresence>
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.4, ease: "easeOut" }}
+                            >
+                              {message.type === 'artifact' ? (
                       <div className="space-y-3">
                         <div className="text-neutral-900 leading-relaxed pl-2">
                           {message.content}
@@ -1035,7 +1104,6 @@ export default function AssistantChatPage({
                           />
                         </div>
                         {/* Ghost buttons for AI messages with artifacts */}
-                        {message.role !== 'user' && (
                           <div className="flex items-center justify-between mt-2">
                             <div className="flex items-center">
                               <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
@@ -1060,7 +1128,6 @@ export default function AssistantChatPage({
                               </button>
                             </div>
                           </div>
-                        )}
                       </div>
                     ) : (
                       <div>
@@ -1094,7 +1161,7 @@ export default function AssistantChatPage({
                           )}
                         </div>
                         {/* Sources section for legal analysis */}
-                        {message.content === 'legal-analysis' && message.role !== 'user' && (
+                        {message.content === 'legal-analysis' && (
                           <>
                             <p className="text-xs font-medium text-neutral-600 mt-4 pl-2">Sources</p>
                             <button 
@@ -1117,25 +1184,7 @@ export default function AssistantChatPage({
                           </button>
                           </>
                         )}
-                        {/* Ghost buttons for user messages */}
-                        {message.role === 'user' && (
-                          <div className="flex items-center mt-2">
-                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
-                              <Copy className="w-3 h-3" />
-                              Copy
-                            </button>
-                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
-                              <ListPlus className="w-3 h-3" />
-                              Save prompt
-                            </button>
-                            <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
-                              <SquarePen className="w-3 h-3" />
-                              Edit query
-                            </button>
-                          </div>
-                        )}
                         {/* Ghost buttons for AI responses */}
-                        {message.role !== 'user' && (
                           <div className="flex items-center justify-between mt-3">
                             <div className="flex items-center">
                               <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
@@ -1160,8 +1209,36 @@ export default function AssistantChatPage({
                               </button>
                             </div>
                           </div>
-                        )}
                       </div>
+                    )}
+                            </motion.div>
+                          </AnimatePresence>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* User message content */}
+                    {message.role === 'user' && (
+                      <>
+                        <div className="text-neutral-900 leading-relaxed pl-2">
+                          {message.content}
+                        </div>
+                        {/* Ghost buttons for user messages */}
+                        <div className="flex items-center mt-2">
+                          <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                            <Copy className="w-3 h-3" />
+                            Copy
+                          </button>
+                          <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                            <ListPlus className="w-3 h-3" />
+                            Save prompt
+                          </button>
+                          <button className="text-xs text-neutral-700 hover:text-neutral-800 hover:bg-neutral-100 transition-colors rounded-sm px-2 py-1 flex items-center gap-1.5">
+                            <SquarePen className="w-3 h-3" />
+                            Edit query
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

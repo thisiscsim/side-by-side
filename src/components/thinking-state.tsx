@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, ChevronDown, ChevronRight, FileText, Table } from "lucide-react";
+import { Brain, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TextShimmer } from "../../components/motion-primitives/text-shimmer";
 
 type ThinkingVariant = "analysis" | "draft" | "review";
 
@@ -44,17 +45,19 @@ export interface ThinkingStateProps {
    * Optional child thinking states to render within this one
    */
   childStates?: ThinkingStateProps[];
+  /**
+   * If true, shows a pulsing animation on the icon
+   */
+  isLoading?: boolean;
 }
 
-function getVariantIcon(variant: ThinkingVariant) {
-  switch (variant) {
-    case "draft":
-      return <FileText className="w-3.5 h-3.5" />;
-    case "review":
-      return <Table className="w-3.5 h-3.5" />;
-    default:
-      return <Brain className="w-3.5 h-3.5" />;
-  }
+function getVariantIcon(isLoading?: boolean) {
+  // Always use the same brain icon regardless of variant
+  return (
+    <Brain 
+      className={`w-3.5 h-3.5 ${isLoading ? 'animate-pulse' : ''}`} 
+    />
+  );
 }
 
 function formatDuration(seconds?: number) {
@@ -72,7 +75,6 @@ function formatDuration(seconds?: number) {
  * content area (to the right of the avatar).
  */
 export default function ThinkingState({
-  variant,
   title = "Thought",
   durationSeconds,
   summary,
@@ -97,9 +99,25 @@ export default function ThinkingState({
   },
   isChild = false,
   childStates = [],
+  isLoading = false,
 }: ThinkingStateProps) {
-  const [open, setOpen] = useState<boolean>(defaultOpen || isChild);
+  // When loading, always show expanded, otherwise use defaultOpen
+  const [open, setOpen] = useState<boolean>(isLoading || defaultOpen || isChild);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+
+  // Handle open state based on loading
+  useEffect(() => {
+    if (isLoading) {
+      // Always open when loading
+      setOpen(true);
+    } else if (!isChild && defaultOpen === false) {
+      // Give a small delay before collapsing to show the final state
+      const timer = setTimeout(() => {
+        setOpen(false);
+      }, 800); // Slightly longer delay to see the complete state
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, defaultOpen, isChild]);
 
   const headerLabel = isChild ? title : `${title}${durationSeconds ? ` for ${formatDuration(durationSeconds)}` : ""}`;
 
@@ -115,7 +133,7 @@ export default function ThinkingState({
         <span className="relative flex items-center justify-center text-neutral-700 mt-0.5 w-3.5 h-3.5">
           {isChild ? (
             // Child states always show their variant icon
-            getVariantIcon(variant)
+            getVariantIcon(isLoading)
           ) : (
             // Parent states have animated icon transitions
             <AnimatePresence mode="wait">
@@ -150,7 +168,7 @@ export default function ThinkingState({
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  {getVariantIcon(variant)}
+                  {getVariantIcon(isLoading)}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -159,16 +177,36 @@ export default function ThinkingState({
         <div className="flex-1 text-left">
           {isChild ? (
             // Child states don't have tooltips
-            <span className="font-medium truncate inline-block">
-              {headerLabel}
-            </span>
+            isLoading ? (
+              <TextShimmer 
+                duration={1.5} 
+                spread={3}
+              >
+                {headerLabel}
+              </TextShimmer>
+            ) : (
+              <span className="font-medium truncate inline-block">
+                {headerLabel}
+              </span>
+            )
           ) : (
             // Parent states have tooltips
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="font-medium truncate inline-block">
-                  {headerLabel}
-                </span>
+                {isLoading ? (
+                  <div>
+                    <TextShimmer 
+                      duration={1.5} 
+                      spread={3}
+                    >
+                      {headerLabel}
+                    </TextShimmer>
+                  </div>
+                ) : (
+                  <span className="font-medium truncate inline-block">
+                    {headerLabel}
+                  </span>
+                )}
               </TooltipTrigger>
               <TooltipContent 
                 side="right" 
