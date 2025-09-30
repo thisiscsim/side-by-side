@@ -14,16 +14,32 @@ interface ReviewTableToolbarProps {
   chatOpen: boolean;
   onToggleChat: () => void;
   onCloseArtifact?: () => void;
+  alignment?: 'top' | 'center' | 'bottom';
+  onAlignmentChange?: (alignment: 'top' | 'center' | 'bottom') => void;
+  textWrap?: boolean;
+  onTextWrapChange?: (wrap: boolean) => void;
 }
 
-export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArtifact }: ReviewTableToolbarProps) {
-  // State for alignment options
-  const [alignment, setAlignment] = useState<'top' | 'center' | 'bottom'>('top');
+export default function ReviewTableToolbar({ 
+  chatOpen, 
+  onToggleChat, 
+  onCloseArtifact,
+  alignment = 'center',
+  onAlignmentChange,
+  textWrap = false,
+  onTextWrapChange 
+}: ReviewTableToolbarProps) {
+  // Use props for alignment instead of local state
+  const handleAlignmentChange = (newAlignment: 'top' | 'center' | 'bottom') => {
+    onAlignmentChange?.(newAlignment);
+  };
   
-  // State for text overflow/wrapping
-  const [textDisplay, setTextDisplay] = useState<'overflow' | 'wrapping'>('overflow');
+  // Use props for text wrap instead of local state
+  const handleTextWrapChange = (wrap: boolean) => {
+    onTextWrapChange?.(wrap);
+  };
   
-  // State for concise/extend
+  // State for concise/extend (keep local for now)
   const [textLength, setTextLength] = useState<'concise' | 'extend'>('concise');
 
   return (
@@ -74,7 +90,7 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => setAlignment('top')}
+                  onClick={() => handleAlignmentChange('top')}
                   className={`p-2 rounded-md transition-colors ${
                     alignment === 'top' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
@@ -95,7 +111,7 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => setAlignment('center')}
+                  onClick={() => handleAlignmentChange('center')}
                   className={`p-2 rounded-md transition-colors ${
                     alignment === 'center' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
@@ -116,7 +132,7 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => setAlignment('bottom')}
+                  onClick={() => handleAlignmentChange('bottom')}
                   className={`p-2 rounded-md transition-colors ${
                     alignment === 'bottom' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
@@ -143,9 +159,9 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => setTextDisplay('overflow')}
+                  onClick={() => handleTextWrapChange(false)}
                   className={`p-2 rounded-md transition-colors ${
-                    textDisplay === 'overflow' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                    !textWrap ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
                 >
                   <img 
@@ -164,9 +180,9 @@ export default function ReviewTableToolbar({ chatOpen, onToggleChat, onCloseArti
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={() => setTextDisplay('wrapping')}
+                  onClick={() => handleTextWrapChange(true)}
                   className={`p-2 rounded-md transition-colors ${
-                    textDisplay === 'wrapping' ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
+                    textWrap ? 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300' : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
                 >
                   <img 

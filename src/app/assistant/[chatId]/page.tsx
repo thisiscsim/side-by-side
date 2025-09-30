@@ -103,6 +103,26 @@ function getThinkingContent(variant: 'analysis' | 'draft' | 'review'): {
             bullets: [
               'Reading files: layout.tsx, globals.css'
             ]
+          },
+          {
+            variant: 'analysis',
+            title: 'Analyzing component patterns',
+            summary: 'Identifying existing dialog and animation implementations',
+            bullets: [
+              'Checking for existing dialog components',
+              'Looking for animation libraries like Framer Motion',
+              'Understanding current UI component structure'
+            ]
+          },
+          {
+            variant: 'analysis',
+            title: 'Planning implementation approach',
+            summary: 'Determining the best way to create the morphing effect',
+            bullets: [
+              'Considering layout animation techniques',
+              'Planning state management for morphing states',
+              'Designing smooth transition choreography'
+            ]
           }
         ]
       };
