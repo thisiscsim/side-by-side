@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Table2, FileText } from 'lucide-react';
+import { Table2, FileText } from '@/lib/central-icons';
 import Image from 'next/image';
 
 interface ReviewTableArtifactCardProps {

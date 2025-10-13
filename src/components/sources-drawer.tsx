@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, ChevronDown } from "lucide-react";
+import { X, Search, ChevronDown } from "@/lib/central-icons";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {

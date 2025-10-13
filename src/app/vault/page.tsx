@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MoreHorizontal } from "lucide-react";
+import { Search, MoreHorizontal } from "@/lib/central-icons";
 import { useState } from "react";
 import { AnimatedBackground } from "../../../components/motion-primitives/animated-background";
 import Link from "next/link";

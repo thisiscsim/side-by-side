@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Search, Globe, Upload, FileText, Database, GraduationCap, Clock, FileIcon, Folder } from "lucide-react";
+import { X, Search, Globe, Upload, FileText, Database, GraduationCap, Clock, FileIcon, Folder } from "@/lib/central-icons";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 

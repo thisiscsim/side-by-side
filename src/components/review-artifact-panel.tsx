@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { UserPlus, Download, GripVertical } from "lucide-react";
+import { UserPlus, Download, GripVertical } from "@/lib/central-icons";
 import {
   createColumnHelper,
   flexRender,

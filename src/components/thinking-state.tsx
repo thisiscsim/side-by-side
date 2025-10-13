@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, ChevronDown, ChevronRight } from "lucide-react";
+import { Brain, ChevronDown, ChevronRight } from "@/lib/central-icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TextShimmer } from "../../components/motion-primitives/text-shimmer";
 

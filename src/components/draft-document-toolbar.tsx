@@ -1,11 +1,11 @@
 "use client";
 
-import { 
-  ChevronsLeft, 
-  ChevronsRight, 
-  Bold, 
-  Italic, 
-  Strikethrough, 
+import {
+  ChevronsLeft,
+  ChevronsRight,
+  Bold,
+  Italic,
+  Strikethrough,
   Underline as UnderlineIcon,
   Link,
   AlignLeft,
@@ -18,8 +18,8 @@ import {
   ListOrdered,
   Undo,
   Redo,
-  Code
-} from "lucide-react";
+  Code,
+} from "@/lib/central-icons";
 import {
   Tooltip,
   TooltipContent,
