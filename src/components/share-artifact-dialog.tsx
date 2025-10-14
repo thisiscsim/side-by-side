@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, Check, Globe, Lock, Users, X, ChevronDown } from "@/lib/central-icons";
+import { Copy, Check, Globe, Lock, Users, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 interface ShareArtifactDialogProps {

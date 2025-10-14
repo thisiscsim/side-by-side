@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, Check, ChevronRight, ArrowLeft, Lock, X, Globe, Users, ChevronDown } from "@/lib/central-icons";
+import { Copy, Check, ChevronRight, ArrowLeft, Lock, X, Globe, Users, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 interface ShareThreadDialogProps {

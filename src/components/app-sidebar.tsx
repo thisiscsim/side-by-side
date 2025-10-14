@@ -15,7 +15,9 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { PanelLeft } from "@/lib/central-icons"
+import { 
+  PanelLeft,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Menu items with custom SVG icons

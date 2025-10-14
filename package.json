@@ -10,8 +10,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@central-icons-react/all": "^1.1.7",
-    "@central-icons-react/round-outlined-radius-2-stroke-1.5": "^1.1.7",
     "@heroui/react": "^2.8.2",
     "@heroui/spinner": "^2.2.21",
     "@heroui/theme": "^2.4.20",

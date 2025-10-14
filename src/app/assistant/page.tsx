@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 
-import { Plus, FileText, Table2, Settings2, ListPlus, Wand, Orbit, Search } from "@/lib/central-icons";
+import { Plus, FileText, Table2, Settings2, ListPlus, Wand, Orbit, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
