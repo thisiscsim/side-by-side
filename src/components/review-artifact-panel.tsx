@@ -9,6 +9,7 @@ import {
   getCoreRowModel,
   useReactTable,
   ColumnResizeMode,
+  RowData,
 } from '@tanstack/react-table';
 // Removed unused imports
 import ReviewTableToolbar from "@/components/review-table-toolbar";
