@@ -17,7 +17,7 @@ import ExportReviewDialog from "@/components/export-review-dialog";
 
 // Extend column meta type for draggable property
 declare module '@tanstack/table-core' {
-  interface ColumnMeta {
+  interface ColumnMeta<TData extends RowData, TValue> {
     draggable?: boolean;
   }
 }
